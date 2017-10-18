@@ -1,6 +1,6 @@
 {
-  "name": "jquery-emojiarea",
-  "version": "1.0.0-alpha",
+  "name": "jquery.emojiarea.js",
+  "version": "0.1.2-beta",
   "description": "Emoji text input area with emoji picker",
   "main": "dist/jquery.emojiarea.min.js",
   "license": "MIT",
@@ -29,17 +29,16 @@
     "webpack": "^3.6.0",
     "webpack-dev-server": "^2.9.1"
   },
-  "author": "Wolfgang Stöttinger (http://www.wolfography.at)",
   "scripts": {
-    "test": "echo \"please open index.html in the test folder, automation coming soon\" && exit 1",
+    "test": "echo \"please open index.html in the example folder, automation coming soon\" && exit 1",
     "build:dist": "webpack --config=webpack.config.dist.babel.js",
     "build": "webpack"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wstoettinger/emojiarea.git"
+    "url": "git+https://github.com/wstoettinger/jquery.emojiarea.js.git"
   },
   "bugs": {
-    "url": "https://github.com/wstoettinger/emojiarea/issues"
+    "url": "https://github.com/wstoettinger/jquery.emojiarea.js/issues"
   }
 }
