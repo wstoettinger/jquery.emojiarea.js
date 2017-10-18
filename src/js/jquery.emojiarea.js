@@ -19,6 +19,9 @@ $(() => {
     $('[data-emojiarea]').emojiarea();
   }
   if (EmojiArea.INJECT_STYLES) {
-    EmojiStyleGenerator.injectImageStyles();
+    EmojiStyleGenerator.injectImageStyles(EmojiArea.DEFAULTS);
   }
 });
+
+// expose EmojiArea
+module.exports = EmojiArea;

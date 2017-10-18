@@ -34,7 +34,9 @@ export default {
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name]'
+    filename: '[name]',
+    libraryTarget: 'var',
+    library: 'EmojiArea'
   },
   devtool: 'source-map',
   plugins: [

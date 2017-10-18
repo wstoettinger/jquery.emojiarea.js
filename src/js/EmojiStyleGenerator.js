@@ -9,7 +9,7 @@ import Emoji from 'EmojiUtil';
 
 export default class EmojiStyleGenerator {
 
-  static createImageStyles(options) {
+  static createImageStyles(options = {}) {
     const iconSize = options.iconSize || 25;
     const assetPath = options.assetPath || '../images';
 
@@ -44,7 +44,7 @@ export default class EmojiStyleGenerator {
     return style;
   }
 
-  static injectImageStyles(options) {
+  static injectImageStyles(options = {}) {
     $('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo("head");
   }
 }
