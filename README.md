@@ -20,7 +20,9 @@ The sprites and groups can be easily customized.
  - automatically replace ascii emoticons (currently only colon aliases supported e.g. :smlie: => 😀)
  - generate sprites in build process, or maybe integrate with [iamcal/emoji-data](https://github.com/iamcal/emoji-data)
  - update emojis according to [unicode technical standard #51](http://unicode.org/reports/tr51/) with current version 5 of unicode.org Emoji List ([list](http://unicode.org/emoji/charts/emoji-list.html) and [full chart](http://unicode.org/emoji/charts/full-emoji-list.html)) 
-
+ - create class hierarchy for unicode / css / image modes to reduce the code footprint for simpler versions 
+ - autocomplete (with dropdown) for colon aliases (also modular)
+ 
 ###Known Bugs/Todos
  - fix caret position after paste and/or insert
  - workaround for css and image mode in edge
