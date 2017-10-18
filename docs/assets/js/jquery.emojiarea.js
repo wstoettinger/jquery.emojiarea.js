@@ -1,9 +1,10 @@
+var EmojiArea =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	function hotDisposeChunk(chunkId) {
 /******/ 		delete installedChunks[chunkId];
 /******/ 	}
-/******/ 	var parentHotUpdateCallback = this["webpackHotUpdate"];
-/******/ 	this["webpackHotUpdate"] = 
+/******/ 	var parentHotUpdateCallback = this["webpackHotUpdateEmojiArea"];
+/******/ 	this["webpackHotUpdateEmojiArea"] = 
 /******/ 	function webpackHotUpdateCallback(chunkId, moreModules) { // eslint-disable-line no-unused-vars
 /******/ 		hotAddUpdateChunk(chunkId, moreModules);
 /******/ 		if(parentHotUpdateCallback) parentHotUpdateCallback(chunkId, moreModules);
@@ -61,7 +62,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "e727db4f462fa7f762fb"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "9f984de609d2888fcebd"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -1200,9 +1201,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
     (0, _jquery2.default)('[data-emojiarea]').emojiarea();
   }
   if (_EmojiArea2.default.INJECT_STYLES) {
-    _EmojiStyleGenerator2.default.injectImageStyles();
+    _EmojiStyleGenerator2.default.injectImageStyles(_EmojiArea2.default.DEFAULTS);
   }
 });
+
+// expose EmojiArea
+module.exports = _EmojiArea2.default;
 
 /***/ }),
 /* 4 */
@@ -2436,7 +2440,9 @@ var EmojiStyleGenerator = function () {
 
   _createClass(EmojiStyleGenerator, null, [{
     key: 'createImageStyles',
-    value: function createImageStyles(options) {
+    value: function createImageStyles() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
       var iconSize = options.iconSize || 25;
       var assetPath = options.assetPath || '../images';
 
@@ -2466,7 +2472,9 @@ var EmojiStyleGenerator = function () {
     }
   }, {
     key: 'injectImageStyles',
-    value: function injectImageStyles(options) {
+    value: function injectImageStyles() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
       (0, _jquery2.default)('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo("head");
     }
   }]);
