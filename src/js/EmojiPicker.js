@@ -1,12 +1,13 @@
 /**
- * Emoji Dropdown Menu
+ * Emoji Picker (Dropdown) can work as global singleton (one dropdown for all inputs on the page)
+ * or with separate instances (and settings) for each input.
  *
- *
+ * @author Wolfgang Stöttinger
  */
-
 import $ from 'jquery';
 import EmojiArea from 'EmojiArea';
-import Emoji from 'Emoji';
+import Emoji from 'EmojiUtil';
+
 
 export default class EmojiPicker {
 
@@ -114,7 +115,6 @@ export default class EmojiPicker {
   }
 
   hide() {
-    this.cb = null;
     this.$p.hide();
   }
 

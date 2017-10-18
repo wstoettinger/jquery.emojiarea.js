@@ -1,8 +1,13 @@
-
+/**
+ * This is the entry point for the library
+ *
+ * @author Wolfgang Stöttinger
+ */
 
 import $ from 'jquery';
 import generatePlugin from './generate-plugin';
 import EmojiArea from 'EmojiArea';
+import EmojiStyleGenerator from 'EmojiStyleGenerator'
 
 generatePlugin('emojiarea', EmojiArea);
 
@@ -14,6 +19,6 @@ $(() => {
     $('[data-emojiarea]').emojiarea();
   }
   if (EmojiArea.INJECT_STYLES) {
-    EmojiArea.injectImageStyles();
+    EmojiStyleGenerator.injectImageStyles();
   }
 });
