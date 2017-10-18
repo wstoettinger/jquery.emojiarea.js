@@ -1,6 +1,6 @@
 {
   "name": "jquery.emojiarea.js",
-  "version": "0.1.2-beta",
+  "version": "0.1.3-beta",
   "description": "Emoji text input area with emoji picker",
   "main": "dist/jquery.emojiarea.min.js",
   "license": "MIT",
@@ -10,7 +10,9 @@
     "emoticons",
     "textarea",
     "input",
-    "lightweight"
+    "lightweight",
+    "ES6",
+    "webpack"
   ],
   "dependencies": {
     "jquery": ">=1.7"
