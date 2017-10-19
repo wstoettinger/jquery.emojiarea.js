@@ -12,23 +12,29 @@ export default class EmojiArea {
   constructor(emojiArea, options) {
     this.o = options;
     this.$ea = $(emojiArea);
-    this.$ti = this.$ea.find(options.inputSelector).hide();
+    this.$ti = this.$ea.find(options.inputSelector);
     this.$b = this.$ea.find(options.buttonSelector)
       .on('click', this.togglePicker.bind(this));
 
-    this.$e = $('<div>')
-      .addClass('emoji-editor')
-      .attr('tabIndex', 0)
-      .attr('contentEditable', true)
-      .text(this.$ti.text())
-      .on(options.inputEvent, this.onInput.bind(this))
-      .on('copy', options.textClipboard ? this.clipboardCopy.bind(this) : () => true)
-      .on('paste', options.textClipboard ? this.clipboardPaste.bind(this) : () => true)
-      .appendTo(this.$ea);
+    if (options.type !== 'unicode') {
+      this.$ti.hide();
+      this.$e = $('<div>')
+        .addClass('emoji-editor')
+        .attr('tabIndex', 0)
+        .attr('contentEditable', true)
+        .text(this.$ti.text())
+        .on(options.inputEvent, this.onInput.bind(this))
+        .on('copy', options.textClipboard ? this.clipboardCopy.bind(this) : () => true)
+        .on('paste', options.textClipboard ? this.clipboardPaste.bind(this) : () => true)
+        .appendTo(this.$ea);
+
+      this._processElement(this.$e);
+
+    } else {
+      this.$e = this.$ti;
+    }
 
     $(document.body).on('mousedown', this.saveSelection.bind(this));
-
-    this._processElement(this.$e);
   }
 
   //
