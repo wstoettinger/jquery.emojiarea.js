@@ -10,7 +10,7 @@ import Emoji from 'EmojiUtil'
 export default class EmojiArea {
 
   constructor(emojiArea, options) {
-    this.o = options;
+    this.o = $.extend({}, EmojiArea.DEFAULTS, options);
     this.$ea = $(emojiArea);
     this.$ti = this.$ea.find(options.inputSelector);
     this.$b = this.$ea.find(options.buttonSelector)
