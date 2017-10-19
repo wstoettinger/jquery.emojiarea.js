@@ -83,7 +83,7 @@ export default class EmojiArea {
     const range = this.restoreSelection();
     if (range) {
       let insert = $.parseHTML(content)[0];
-      insert = document.importNode(insert,true); // this is necessary for IE
+      insert = document.importNode(insert, true); // this is necessary for IE
       range.deleteContents();
       range.insertNode(insert);
       range.selectNode(insert);
@@ -101,25 +101,6 @@ export default class EmojiArea {
   updateInput() {
     this.$ti.val(this.$e.text());
     this.$ti.trigger(this.o.inputEvent);
-  }
-
-  togglePicker(e) {
-    if (!this.picker || !this.picker.isVisible())
-      this.picker = EmojiPicker.show(this.insert.bind(this), this.$b, this.o);
-    else
-      this.picker.hide();
-
-    e.stopPropagation();
-    return false;
-  }
-
-  insert(alias) {
-    const content = EmojiArea.createEmoji(alias, this.o);
-    if (!this.replaceSelection(content)) {
-      this.$e.append(content);
-      // todo place cursor to end of textfield
-    }
-    this.$e.focus().trigger(this.o.inputEvent);
   }
 
   processContent() {
@@ -168,6 +149,25 @@ export default class EmojiArea {
         }
       }
     });
+  }
+
+  togglePicker(e) {
+    if (!this.picker || !this.picker.isVisible())
+      this.picker = EmojiPicker.show(this.insert.bind(this), this.$b, this.o);
+    else
+      this.picker.hide();
+
+    e.stopPropagation();
+    return false;
+  }
+
+  insert(alias) {
+    const content = EmojiArea.createEmoji(alias, this.o);
+    if (!this.replaceSelection(content)) {
+      this.$e.append(content);
+      // todo place cursor to end of textfield
+    }
+    this.$e.focus().trigger(this.o.inputEvent);
   }
 
   static createEmoji(alias, options = EmojiArea.DEFAULTS, unicode) {
