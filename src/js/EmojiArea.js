@@ -229,7 +229,7 @@ EmojiArea.DEFAULTS = {
   inputEvent: /Trident/.test(navigator.userAgent) ? 'textinput' : 'input',
   // todo: other pickerAnchorPositions:
   pickerAnchor: 'left',
-  type: 'css', // can be one of (unicode|css|image)
+  type: 'unicode', // can be one of (unicode|css|image)
   iconSize: 25, // only for css or image mode
   assetPath: '../images', // only for css or image mode
   textClipboard: true,
