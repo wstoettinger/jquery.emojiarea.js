@@ -1,6 +1,6 @@
 # jquery.emojiarea.js
 
-This jquery plugin adds emoji support to textareas, supports colon aliases (e.g. :smile:) and features an emoji picker to insert emojis directly into the textare. 
+This jquery plugin adds emoji support to textareas, supports colon aliases (e.g. :smile:) and features an emoji picker to insert emojis directly into the textarea. 
 Currently three different usage modes are supported: unicode, css and image.  
 
 This library is inspired by [OneSignal/emoji-picker](https://github.com/OneSignal/emoji-picker) and [diy/jquery-emojiarea](https://github.com/diy/jquery-emojiarea). It has been rewritten from scratch with easy usability from the developer perspective in mind.
