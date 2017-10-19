@@ -62,7 +62,7 @@ var EmojiArea =
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "f3e1fe7dfcec2460194d"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "3ff20dcdb18e4193403f"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -749,7 +749,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * @author Wolfgang Stöttinger
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       */
 
-var _EmojiData = __webpack_require__(6);
+var _EmojiData = __webpack_require__(5);
 
 var _EmojiData2 = _interopRequireDefault(_EmojiData);
 
@@ -916,7 +916,7 @@ var _jquery = __webpack_require__(0);
 
 var _jquery2 = _interopRequireDefault(_jquery);
 
-var _EmojiPicker = __webpack_require__(5);
+var _EmojiPicker = __webpack_require__(4);
 
 var _EmojiPicker2 = _interopRequireDefault(_EmojiPicker);
 
@@ -932,7 +932,7 @@ var EmojiArea = function () {
   function EmojiArea(emojiArea, options) {
     _classCallCheck(this, EmojiArea);
 
-    this.o = options;
+    this.o = _jquery2.default.extend({}, EmojiArea.DEFAULTS, options);
     this.$ea = (0, _jquery2.default)(emojiArea);
     this.$ti = this.$ea.find(options.inputSelector);
     this.$b = this.$ea.find(options.buttonSelector).on('click', this.togglePicker.bind(this));
@@ -1165,7 +1165,7 @@ EmojiArea.DEFAULTS = {
   inputEvent: /Trident/.test(navigator.userAgent) ? 'textinput' : 'input',
   // todo: other pickerAnchorPositions:
   pickerAnchor: 'left',
-  type: 'css', // can be one of (unicode|css|image)
+  type: 'unicode', // can be one of (unicode|css|image)
   iconSize: 25, // only for css or image mode
   assetPath: '../images', // only for css or image mode
   textClipboard: true,
@@ -1182,15 +1182,29 @@ EmojiArea.INJECT_STYLES = true; // only makes sense when EmojiArea.type != 'unic
 "use strict";
 
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _EmojiArea = __webpack_require__(2);
+
+Object.keys(_EmojiArea).forEach(function (key) {
+  if (key === "default" || key === "__esModule") return;
+  Object.defineProperty(exports, key, {
+    enumerable: true,
+    get: function get() {
+      return _EmojiArea[key];
+    }
+  });
+});
+
 var _jquery = __webpack_require__(0);
 
 var _jquery2 = _interopRequireDefault(_jquery);
 
-var _generatePlugin = __webpack_require__(4);
+var _generatePlugin = __webpack_require__(6);
 
 var _generatePlugin2 = _interopRequireDefault(_generatePlugin);
-
-var _EmojiArea = __webpack_require__(2);
 
 var _EmojiArea2 = _interopRequireDefault(_EmojiArea);
 
@@ -1220,93 +1234,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
   }
 });
 
-// expose EmojiArea
+// expose EmojiArea for modules
+
+
+// expose EmojiArea outside modules
 module.exports = _EmojiArea2.default;
 
 /***/ }),
 /* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-exports.default = generatePlugin;
-
-var _jquery = __webpack_require__(0);
-
-var _jquery2 = _interopRequireDefault(_jquery);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-/**
- * Generate a jQuery plugin
- * @param pluginName [string] Plugin name
- * @param className [object] Class of the plugin
- * @param shortHand [bool] Generate a shorthand as $.pluginName
- *
- * @example
- * import plugin from 'plugin';
- *
- * class MyPlugin {
- *     constructor(element, options) {
- *         // ...
- *     }
- * }
- *
- * MyPlugin.DEFAULTS = {};
- *
- * plugin('myPlugin', MyPlugin');
- */
-function generatePlugin(pluginName, className) {
-  var shortHand = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-  var instanceName = '__' + pluginName;
-  var old = _jquery2.default.fn[pluginName];
-
-  _jquery2.default.fn[pluginName] = function (option) {
-    return this.each(function () {
-      var $this = (0, _jquery2.default)(this);
-      var instance = $this.data(instanceName);
-
-      if (!instance && option !== 'destroy') {
-        var _options = _jquery2.default.extend({}, className.DEFAULTS, $this.data(), (typeof option === 'undefined' ? 'undefined' : _typeof(option)) === 'object' && option);
-        $this.data(instanceName, instance = new className(this, _options));
-      } else if (typeof instance.configure === 'function') {
-        instance.configure(options);
-      }
-
-      if (typeof option === 'string') {
-        if (option === 'destroy') {
-          instance.destroy();
-          $this.data(instanceName, false);
-        } else {
-          instance[option]();
-        }
-      }
-    });
-  };
-
-  // - Short hand
-  if (shortHand) {
-    _jquery2.default[pluginName] = function (options) {
-      return (0, _jquery2.default)({})[pluginName](options);
-    };
-  }
-
-  // - No conflict
-  _jquery2.default.fn[pluginName].noConflict = function () {
-    return _jquery2.default.fn[pluginName] = old;
-  };
-}
-
-/***/ }),
-/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1493,7 +1428,7 @@ var KEY_ESC = 27;
 var KEY_TAB = 9;
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2418,6 +2353,88 @@ var ascii = {
 };
 
 exports.default = { data: data, groups: groups, ascii: ascii };
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+exports.default = generatePlugin;
+
+var _jquery = __webpack_require__(0);
+
+var _jquery2 = _interopRequireDefault(_jquery);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Generate a jQuery plugin
+ * @param pluginName [string] Plugin name
+ * @param className [object] Class of the plugin
+ * @param shortHand [bool] Generate a shorthand as $.pluginName
+ *
+ * @example
+ * import plugin from 'plugin';
+ *
+ * class MyPlugin {
+ *     constructor(element, options) {
+ *         // ...
+ *     }
+ * }
+ *
+ * MyPlugin.DEFAULTS = {};
+ *
+ * plugin('myPlugin', MyPlugin');
+ */
+function generatePlugin(pluginName, className) {
+  var shortHand = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+  var instanceName = '__' + pluginName;
+  var old = _jquery2.default.fn[pluginName];
+
+  _jquery2.default.fn[pluginName] = function (option) {
+    return this.each(function () {
+      var $this = (0, _jquery2.default)(this);
+      var instance = $this.data(instanceName);
+
+      if (!instance && option !== 'destroy') {
+        var _options = _jquery2.default.extend({}, className.DEFAULTS, $this.data(), (typeof option === 'undefined' ? 'undefined' : _typeof(option)) === 'object' && option);
+        $this.data(instanceName, instance = new className(this, _options));
+      } else if (typeof instance.configure === 'function') {
+        instance.configure(options);
+      }
+
+      if (typeof option === 'string') {
+        if (option === 'destroy') {
+          instance.destroy();
+          $this.data(instanceName, false);
+        } else {
+          instance[option]();
+        }
+      }
+    });
+  };
+
+  // - Short hand
+  if (shortHand) {
+    _jquery2.default[pluginName] = function (options) {
+      return (0, _jquery2.default)({})[pluginName](options);
+    };
+  }
+
+  // - No conflict
+  _jquery2.default.fn[pluginName].noConflict = function () {
+    return _jquery2.default.fn[pluginName] = old;
+  };
+}
 
 /***/ }),
 /* 7 */
