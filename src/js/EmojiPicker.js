@@ -8,10 +8,9 @@ import $ from 'jquery';
 import EmojiArea from 'EmojiArea';
 import Emoji from 'EmojiUtil';
 
-
 export default class EmojiPicker {
 
-  constructor(options) {
+  constructor(options = EmojiArea.DEFAULTS) {
     this.o = options;
     const $body = $(document.body);
     $body.on('keydown', (e) => { if (e.keyCode === KEY_ESC || e.keyCode === KEY_TAB) this.hide(); });
