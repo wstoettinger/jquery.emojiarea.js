@@ -6,8 +6,8 @@
 
 import $ from 'jquery';
 import generatePlugin from './generate-plugin';
-import EmojiArea from 'EmojiArea';
 import EmojiStyleGenerator from 'EmojiStyleGenerator'
+import EmojiArea from 'EmojiArea';
 
 generatePlugin('emojiarea', EmojiArea);
 
@@ -24,8 +24,8 @@ $(() => {
 });
 
 // expose EmojiArea for modules
-export * from 'EmojiArea';
+// export * from 'EmojiArea';
 
 // expose EmojiArea outside modules
-module.exports = EmojiArea;
+//module.exports = EmojiArea;
 
