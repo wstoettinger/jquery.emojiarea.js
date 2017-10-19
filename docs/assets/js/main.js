@@ -1,2 +1,2 @@
 
-EmojiArea.DEFAULTS.assetPath = './assets/images';
+//EmojiArea.EmojiArea.DEFAULTS.assetPath = './assets/images';
