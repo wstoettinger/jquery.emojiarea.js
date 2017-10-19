@@ -48,6 +48,10 @@ export default class EmojiUtil {
     return EmojiUtil.unicodes.hasOwnProperty(alias);
   }
 
+  static checkAscii(ascii) {
+    return EmojiUtil.ascii.hasOwnProperty(ascii);
+  }
+
   /**
    * @param alias
    * @param groupData if true returns an array including groupId, Col# and Row# of the Emoji

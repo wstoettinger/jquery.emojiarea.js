@@ -32,6 +32,14 @@ export default class EmojiArea {
 
     } else {
       this.$e = this.$ti;
+      this.$ti.on(options.inputEvent, () => {
+        let val = this.$ti.val();
+        let parsed = EmojiArea.replaceAscii(this.o.asciiRegex, val);
+        if (parsed !== val) {
+          this.$ti.val(parsed);
+          this.$ti.trigger(this.o.inputEvent);
+        }
+      });
     }
 
     $(document.body).on('mousedown', this.saveSelection.bind(this));
@@ -142,18 +150,11 @@ export default class EmojiArea {
         let parsed = e.nodeValue;
 
         if (this.o.type !== 'unicode') { //convert existing unicodes
-          parsed = parsed.replace(this.o.unicodeRegex, (match, unicode) => {
-            return Emoji.checkUnicode(unicode)
-              ? EmojiArea.createEmoji(null, this.o, unicode)
-              : unicode;
-          });
+          parsed = EmojiArea.replaceUnicodes(this.o.unicodeRegex, parsed);
         }
 
-        parsed = parsed.replace(this.o.emojiRegex, (match, alias) => {
-          return Emoji.checkAlias(alias)
-            ? EmojiArea.createEmoji(alias, this.o)
-            : ':' + alias + ':';
-        });
+        parsed = EmojiArea.replaceAscii(this.o.asciiRegex, parsed);
+        parsed = EmojiArea.replaceAliases(this.o.aliasRegex, parsed);
 
         if (parsed !== e.nodeValue) {
           const content = $.parseHTML(parsed);
@@ -166,6 +167,33 @@ export default class EmojiArea {
           }
         }
       }
+    });
+  }
+
+  static replaceUnicodes(regex, text) {
+    return text.replace(regex, (match, unicode) => {
+      return Emoji.checkUnicode(unicode)
+        ? EmojiArea.createEmoji(null, this.o, unicode)
+        : unicode;
+    });
+  }
+
+  static replaceAscii(regex, text) {
+    return text.replace(regex, (match, ascii) => {
+      if (Emoji.checkAscii(ascii)) {
+        const alias = Emoji.aliasFromAscii(ascii);
+        if (alias)
+          return EmojiArea.createEmoji(alias, this.o);
+      }
+      return ascii + ' ';
+    });
+  }
+
+  static replaceAliases(regex, text) {
+    return text.replace(regex, (match, alias) => {
+      return Emoji.checkAlias(alias)
+        ? EmojiArea.createEmoji(alias, this.o)
+        : ':' + alias + ':';
     });
   }
 
@@ -223,7 +251,8 @@ export default class EmojiArea {
 }
 
 EmojiArea.DEFAULTS = {
-  emojiRegex: /:([a-z0-9_]+?):/g,
+  aliasRegex: /:([a-z0-9_]+?):/g,
+  asciiRegex: /([\/<:;=8>][()D3opP*>\/\\|-]+) /g,
   unicodeRegex: /([\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}])/ug,
   inputSelector: 'input:text, textarea',
   buttonSelector: '>.emoji-button',
