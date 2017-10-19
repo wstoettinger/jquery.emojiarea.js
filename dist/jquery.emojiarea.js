@@ -62,7 +62,7 @@ var EmojiArea =
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "9f984de609d2888fcebd"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "f3e1fe7dfcec2460194d"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -934,18 +934,23 @@ var EmojiArea = function () {
 
     this.o = options;
     this.$ea = (0, _jquery2.default)(emojiArea);
-    this.$ti = this.$ea.find(options.inputSelector).hide();
+    this.$ti = this.$ea.find(options.inputSelector);
     this.$b = this.$ea.find(options.buttonSelector).on('click', this.togglePicker.bind(this));
 
-    this.$e = (0, _jquery2.default)('<div>').addClass('emoji-editor').attr('tabIndex', 0).attr('contentEditable', true).text(this.$ti.text()).on(options.inputEvent, this.onInput.bind(this)).on('copy', options.textClipboard ? this.clipboardCopy.bind(this) : function () {
-      return true;
-    }).on('paste', options.textClipboard ? this.clipboardPaste.bind(this) : function () {
-      return true;
-    }).appendTo(this.$ea);
+    if (options.type !== 'unicode') {
+      this.$ti.hide();
+      this.$e = (0, _jquery2.default)('<div>').addClass('emoji-editor').attr('tabIndex', 0).attr('contentEditable', true).text(this.$ti.text()).on(options.inputEvent, this.onInput.bind(this)).on('copy', options.textClipboard ? this.clipboardCopy.bind(this) : function () {
+        return true;
+      }).on('paste', options.textClipboard ? this.clipboardPaste.bind(this) : function () {
+        return true;
+      }).appendTo(this.$ea);
+
+      this._processElement(this.$e);
+    } else {
+      this.$e = this.$ti;
+    }
 
     (0, _jquery2.default)(document.body).on('mousedown', this.saveSelection.bind(this));
-
-    this._processElement(this.$e);
   }
 
   //
@@ -985,10 +990,16 @@ var EmojiArea = function () {
   }, {
     key: 'saveSelection',
     value: function saveSelection(event) {
-      if (!event || event.target !== this.$e[0]) {
-        var sel = window.getSelection();
-        if (sel.focusNode && (sel.focusNode === this.$e[0] || sel.focusNode.parentNode === this.$e[0])) {
-          this.selection = sel.getRangeAt(0);
+      var e = this.$e[0];
+      if (!event || event.target !== e) {
+        // for unicode mode, the textarea itself:
+        if (typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
+          this.tiSelection = { start: e.selectionStart, end: e.selectionEnd };
+        } else {
+          var sel = window.getSelection();
+          if (sel.focusNode && (sel.focusNode === e || sel.focusNode.parentNode === e)) {
+            this.selection = sel.getRangeAt(0);
+          }
         }
       }
     }
@@ -1015,6 +1026,10 @@ var EmojiArea = function () {
         range.selectNode(insert);
         range.collapse(false);
         return true;
+      } else {
+        var sel = this.tiSelection;
+        var val = this.$e.val();
+        this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
       }
       return false;
     }
@@ -1029,24 +1044,6 @@ var EmojiArea = function () {
     value: function updateInput() {
       this.$ti.val(this.$e.text());
       this.$ti.trigger(this.o.inputEvent);
-    }
-  }, {
-    key: 'togglePicker',
-    value: function togglePicker(e) {
-      if (!this.picker || !this.picker.isVisible()) this.picker = _EmojiPicker2.default.show(this.insert.bind(this), this.$b, this.o);else this.picker.hide();
-
-      e.stopPropagation();
-      return false;
-    }
-  }, {
-    key: 'insert',
-    value: function insert(alias) {
-      var content = EmojiArea.createEmoji(alias, this.o);
-      if (!this.replaceSelection(content)) {
-        this.$e.append(content);
-        // todo place cursor to end of textfield
-      }
-      this.$e.focus().trigger(this.o.inputEvent);
     }
   }, {
     key: 'processContent',
@@ -1101,6 +1098,24 @@ var EmojiArea = function () {
           }
         }
       });
+    }
+  }, {
+    key: 'togglePicker',
+    value: function togglePicker(e) {
+      if (!this.picker || !this.picker.isVisible()) this.picker = _EmojiPicker2.default.show(this.insert.bind(this), this.$b, this.o);else this.picker.hide();
+
+      e.stopPropagation();
+      return false;
+    }
+  }, {
+    key: 'insert',
+    value: function insert(alias) {
+      var content = EmojiArea.createEmoji(alias, this.o);
+      if (!this.replaceSelection(content)) {
+        this.$e.append(content);
+        // todo place cursor to end of textfield
+      }
+      this.$e.focus().trigger(this.o.inputEvent);
     }
   }], [{
     key: 'createEmoji',
@@ -1328,8 +1343,10 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var EmojiPicker = function () {
-  function EmojiPicker(options) {
+  function EmojiPicker() {
     var _this = this;
+
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _EmojiArea2.default.DEFAULTS;
 
     _classCallCheck(this, EmojiPicker);
 
