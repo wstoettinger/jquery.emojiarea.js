@@ -67,10 +67,17 @@ export default class EmojiArea {
   //
 
   saveSelection(event) {
-    if (!event || event.target !== this.$e[0]) {
-      const sel = window.getSelection();
-      if (sel.focusNode && (sel.focusNode === this.$e[0] || sel.focusNode.parentNode === this.$e[0])) {
-        this.selection = sel.getRangeAt(0);
+    const e = this.$e[0];
+    if (!event || event.target !== e) {
+      // for unicode mode, the textarea itself:
+      if (typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
+        this.tiSelection = { start: e.selectionStart, end: e.selectionEnd };
+      }
+      else {
+        const sel = window.getSelection();
+        if (sel.focusNode && (sel.focusNode === e || sel.focusNode.parentNode === e)) {
+          this.selection = sel.getRangeAt(0);
+        }
       }
     }
   }
@@ -95,6 +102,11 @@ export default class EmojiArea {
       range.selectNode(insert);
       range.collapse(false);
       return true;
+    }
+    else {
+      const sel = this.tiSelection;
+      let val = this.$e.val();
+      this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
     }
     return false;
   }
