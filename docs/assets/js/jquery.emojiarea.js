@@ -62,7 +62,7 @@ var EmojiArea =
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "3ff20dcdb18e4193403f"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "6396f0c1cfc2db055c3e"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -749,7 +749,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * @author Wolfgang Stöttinger
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       */
 
-var _EmojiData = __webpack_require__(5);
+var _EmojiData = __webpack_require__(6);
 
 var _EmojiData2 = _interopRequireDefault(_EmojiData);
 
@@ -804,6 +804,11 @@ var EmojiUtil = function () {
     key: 'checkUnicode',
     value: function checkUnicode(alias) {
       return EmojiUtil.unicodes.hasOwnProperty(alias);
+    }
+  }, {
+    key: 'checkAscii',
+    value: function checkAscii(ascii) {
+      return EmojiUtil.ascii.hasOwnProperty(ascii);
     }
 
     /**
@@ -916,7 +921,7 @@ var _jquery = __webpack_require__(0);
 
 var _jquery2 = _interopRequireDefault(_jquery);
 
-var _EmojiPicker = __webpack_require__(4);
+var _EmojiPicker = __webpack_require__(7);
 
 var _EmojiPicker2 = _interopRequireDefault(_EmojiPicker);
 
@@ -930,6 +935,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var EmojiArea = function () {
   function EmojiArea(emojiArea, options) {
+    var _this = this;
+
     _classCallCheck(this, EmojiArea);
 
     this.o = _jquery2.default.extend({}, EmojiArea.DEFAULTS, options);
@@ -948,6 +955,14 @@ var EmojiArea = function () {
       this._processElement(this.$e);
     } else {
       this.$e = this.$ti;
+      this.$ti.on(options.inputEvent, function () {
+        var val = _this.$ti.val();
+        var parsed = EmojiArea.replaceAscii(_this.o.asciiRegex, val);
+        if (parsed !== val) {
+          _this.$ti.val(parsed);
+          _this.$ti.trigger(_this.o.inputEvent);
+        }
+      });
     }
 
     (0, _jquery2.default)(document.body).on('mousedown', this.saveSelection.bind(this));
@@ -1054,7 +1069,7 @@ var EmojiArea = function () {
   }, {
     key: '_processElement',
     value: function _processElement() {
-      var _this = this;
+      var _this2 = this;
 
       var element = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.$e;
 
@@ -1067,33 +1082,30 @@ var EmojiArea = function () {
           // element or document fragment
           var $e = (0, _jquery2.default)(e);
           if (!$e.is('.emoji')) // skip emojis
-            _this._processElement($e);
+            _this2._processElement($e);
         } else if (e.nodeType === 3) {
           // text node
           // replace unicodes
           var parsed = e.nodeValue;
 
-          if (_this.o.type !== 'unicode') {
+          if (_this2.o.type !== 'unicode') {
             //convert existing unicodes
-            parsed = parsed.replace(_this.o.unicodeRegex, function (match, unicode) {
-              return _EmojiUtil2.default.checkUnicode(unicode) ? EmojiArea.createEmoji(null, _this.o, unicode) : unicode;
-            });
+            parsed = EmojiArea.replaceUnicodes(_this2.o.unicodeRegex, parsed);
           }
 
-          parsed = parsed.replace(_this.o.emojiRegex, function (match, alias) {
-            return _EmojiUtil2.default.checkAlias(alias) ? EmojiArea.createEmoji(alias, _this.o) : ':' + alias + ':';
-          });
+          parsed = EmojiArea.replaceAscii(_this2.o.asciiRegex, parsed);
+          parsed = EmojiArea.replaceAliases(_this2.o.aliasRegex, parsed);
 
           if (parsed !== e.nodeValue) {
             var content = _jquery2.default.parseHTML(parsed);
-            var wasSelected = _this.selection && _this.selection.endContainer === e;
+            var wasSelected = _this2.selection && _this2.selection.endContainer === e;
             (0, _jquery2.default)(e).before(content).remove();
             var select = content.filter(function (e) {
               return e.nodeType !== 3;
             })[0];
             if (wasSelected && select) {
-              _this.selection.selectNode(select);
-              _this.selection.collapse(false);
+              _this2.selection.selectNode(select);
+              _this2.selection.collapse(false);
             }
           }
         }
@@ -1102,7 +1114,8 @@ var EmojiArea = function () {
   }, {
     key: 'togglePicker',
     value: function togglePicker(e) {
-      if (!this.picker || !this.picker.isVisible()) this.picker = _EmojiPicker2.default.show(this.insert.bind(this), this.$b, this.o);else this.picker.hide();
+      var delegate = this.picker || _EmojiPicker2.default;
+      if (!delegate.isVisible()) this.picker = delegate.show(this.insert.bind(this), this.$b, this.o);else delegate.hide();
 
       e.stopPropagation();
       return false;
@@ -1118,6 +1131,37 @@ var EmojiArea = function () {
       this.$e.focus().trigger(this.o.inputEvent);
     }
   }], [{
+    key: 'replaceUnicodes',
+    value: function replaceUnicodes(regex, text) {
+      var _this3 = this;
+
+      return text.replace(regex, function (match, unicode) {
+        return _EmojiUtil2.default.checkUnicode(unicode) ? EmojiArea.createEmoji(null, _this3.o, unicode) : unicode;
+      });
+    }
+  }, {
+    key: 'replaceAscii',
+    value: function replaceAscii(regex, text) {
+      var _this4 = this;
+
+      return text.replace(regex, function (match, ascii) {
+        if (_EmojiUtil2.default.checkAscii(ascii)) {
+          var alias = _EmojiUtil2.default.aliasFromAscii(ascii);
+          if (alias) return EmojiArea.createEmoji(alias, _this4.o);
+        }
+        return ascii + ' ';
+      });
+    }
+  }, {
+    key: 'replaceAliases',
+    value: function replaceAliases(regex, text) {
+      var _this5 = this;
+
+      return text.replace(regex, function (match, alias) {
+        return _EmojiUtil2.default.checkAlias(alias) ? EmojiArea.createEmoji(alias, _this5.o) : ':' + alias + ':';
+      });
+    }
+  }, {
     key: 'createEmoji',
     value: function createEmoji(alias) {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : EmojiArea.DEFAULTS;
@@ -1158,13 +1202,15 @@ exports.default = EmojiArea;
 
 
 EmojiArea.DEFAULTS = {
-  emojiRegex: /:([a-z0-9_]+?):/g,
+  aliasRegex: /:([a-z0-9_]+?):/g,
+  asciiRegex: /([\/<:;=8>][()D3opP*>\/\\|-]+) /g,
   unicodeRegex: /((?:[\xA9\xAE\u2122\u23E9-\u23EF\u23F3\u23F8-\u23FA\u24C2\u25B6\u2600-\u27BF\u2934\u2935\u2B05-\u2B07\u2B1B\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299]|\uD83C[\uDC04\uDCCF\uDD70\uDD71\uDD7E\uDD7F\uDD8E\uDD91-\uDE51\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEFF]|\uD83E[\uDD00-\uDDFF]))/g,
   inputSelector: 'input:text, textarea',
   buttonSelector: '>.emoji-button',
   inputEvent: /Trident/.test(navigator.userAgent) ? 'textinput' : 'input',
-  // todo: other pickerAnchorPositions:
-  pickerAnchor: 'left',
+  anchorAlignment: 'left', // can be left|right
+  anchorOffsetX: -5,
+  anchorOffsetY: 5,
   type: 'unicode', // can be one of (unicode|css|image)
   iconSize: 25, // only for css or image mode
   assetPath: '../images', // only for css or image mode
@@ -1182,35 +1228,21 @@ EmojiArea.INJECT_STYLES = true; // only makes sense when EmojiArea.type != 'unic
 "use strict";
 
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _EmojiArea = __webpack_require__(2);
-
-Object.keys(_EmojiArea).forEach(function (key) {
-  if (key === "default" || key === "__esModule") return;
-  Object.defineProperty(exports, key, {
-    enumerable: true,
-    get: function get() {
-      return _EmojiArea[key];
-    }
-  });
-});
-
 var _jquery = __webpack_require__(0);
 
 var _jquery2 = _interopRequireDefault(_jquery);
 
-var _generatePlugin = __webpack_require__(6);
+var _generatePlugin = __webpack_require__(4);
 
 var _generatePlugin2 = _interopRequireDefault(_generatePlugin);
 
-var _EmojiArea2 = _interopRequireDefault(_EmojiArea);
-
-var _EmojiStyleGenerator = __webpack_require__(7);
+var _EmojiStyleGenerator = __webpack_require__(5);
 
 var _EmojiStyleGenerator2 = _interopRequireDefault(_EmojiStyleGenerator);
+
+var _EmojiArea = __webpack_require__(2);
+
+var _EmojiArea2 = _interopRequireDefault(_EmojiArea);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1235,10 +1267,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 });
 
 // expose EmojiArea for modules
-
+// export * from 'EmojiArea';
 
 // expose EmojiArea outside modules
-module.exports = _EmojiArea2.default;
+//module.exports = EmojiArea;
 
 /***/ }),
 /* 4 */
@@ -1251,9 +1283,91 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+exports.default = generatePlugin;
+
+var _jquery = __webpack_require__(0);
+
+var _jquery2 = _interopRequireDefault(_jquery);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Generate a jQuery plugin
+ * @param pluginName [string] Plugin name
+ * @param className [object] Class of the plugin
+ * @param shortHand [bool] Generate a shorthand as $.pluginName
+ *
+ * @example
+ * import plugin from 'plugin';
+ *
+ * class MyPlugin {
+ *     constructor(element, options) {
+ *         // ...
+ *     }
+ * }
+ *
+ * MyPlugin.DEFAULTS = {};
+ *
+ * plugin('myPlugin', MyPlugin');
+ */
+function generatePlugin(pluginName, className) {
+  var shortHand = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+  var instanceName = '__' + pluginName;
+  var old = _jquery2.default.fn[pluginName];
+
+  _jquery2.default.fn[pluginName] = function (option) {
+    return this.each(function () {
+      var $this = (0, _jquery2.default)(this);
+      var instance = $this.data(instanceName);
+
+      if (!instance && option !== 'destroy') {
+        var _options = _jquery2.default.extend({}, className.DEFAULTS, $this.data(), (typeof option === 'undefined' ? 'undefined' : _typeof(option)) === 'object' && option);
+        $this.data(instanceName, instance = new className(this, _options));
+      } else if (typeof instance.configure === 'function') {
+        instance.configure(options);
+      }
+
+      if (typeof option === 'string') {
+        if (option === 'destroy') {
+          instance.destroy();
+          $this.data(instanceName, false);
+        } else {
+          instance[option]();
+        }
+      }
+    });
+  };
+
+  // - Short hand
+  if (shortHand) {
+    _jquery2.default[pluginName] = function (options) {
+      return (0, _jquery2.default)({})[pluginName](options);
+    };
+  }
+
+  // - No conflict
+  _jquery2.default.fn[pluginName].noConflict = function () {
+    return _jquery2.default.fn[pluginName] = old;
+  };
+}
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * Emoji Picker (Dropdown) can work as global singleton (one dropdown for all inputs on the page)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * or with separate instances (and settings) for each input.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * This class generated css style which can automatically be injected into the head.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * This is not needed in unicode or image mode.
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       *
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * @author Wolfgang Stöttinger
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       */
@@ -1263,172 +1377,67 @@ var _jquery = __webpack_require__(0);
 
 var _jquery2 = _interopRequireDefault(_jquery);
 
-var _EmojiArea = __webpack_require__(2);
-
-var _EmojiArea2 = _interopRequireDefault(_EmojiArea);
-
 var _EmojiUtil = __webpack_require__(1);
 
 var _EmojiUtil2 = _interopRequireDefault(_EmojiUtil);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var EmojiPicker = function () {
-  function EmojiPicker() {
-    var _this = this;
-
-    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _EmojiArea2.default.DEFAULTS;
-
-    _classCallCheck(this, EmojiPicker);
-
-    this.o = options;
-    var $body = (0, _jquery2.default)(document.body);
-    $body.on('keydown', function (e) {
-      if (e.keyCode === KEY_ESC || e.keyCode === KEY_TAB) _this.hide();
-    });
-    $body.on('click', function () {
-      _this.hide();
-    });
-    (0, _jquery2.default)(window).on('resize', function () {
-      if (_this.$p.is(':visible')) {
-        _this.reposition();
-      }
-    });
-
-    this.$p = (0, _jquery2.default)('<div>').addClass('emoji-picker').on('mouseup click', function (e) {
-      return e.stopPropagation() && false;
-    }).hide().appendTo($body);
-
-    var tabs = this.loadPicker();
-    setTimeout(this.loadEmojis.bind(this, tabs), 100);
+var EmojiStyleGenerator = function () {
+  function EmojiStyleGenerator() {
+    _classCallCheck(this, EmojiStyleGenerator);
   }
 
-  _createClass(EmojiPicker, [{
-    key: 'loadPicker',
-    value: function loadPicker() {
-      var _this2 = this;
+  _createClass(EmojiStyleGenerator, null, [{
+    key: 'createImageStyles',
+    value: function createImageStyles() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-      var ul = (0, _jquery2.default)('<ul>').addClass('emoji-selector nav nav-tabs');
-      var tabs = (0, _jquery2.default)('<div>').addClass('tab-content');
+      var iconSize = options.iconSize || 25;
+      var assetPath = options.assetPath || '../images';
 
-      var _loop = function _loop(g) {
-        var group = _EmojiUtil2.default.groups[g];
-        var id = 'group_' + group.name;
-        var gid = '#' + id;
-
-        var a = (0, _jquery2.default)('<a>').html(_EmojiArea2.default.createEmoji(group.name, _this2.o)).data('toggle', 'tab').attr('href', gid);
-
-        ul.append((0, _jquery2.default)('<li>').append(a));
-
-        var tab = (0, _jquery2.default)('<div>').attr('id', id).addClass('emoji-group tab-pane').data('group', group.name);
-
-        a.on('click', function (e) {
-          (0, _jquery2.default)('.tab-pane').not(tab).hide().removeClass('active');
-          tab.addClass('active').show();
-          e.preventDefault();
-        });
-        tabs.append(tab);
-      };
-
-      for (var g = 0; g < _EmojiUtil2.default.groups.length; g++) {
-        _loop(g);
-      }
-
-      tabs.find('.tab-pane').not(':first-child').hide().removeClass('active');
-
-      this.$p.append(ul).append(tabs);
-      return tabs.children();
-    }
-  }, {
-    key: 'loadEmojis',
-    value: function loadEmojis(tabs) {
-      var _this3 = this;
+      var style = '';
+      // with before pseudo doesn't work with selection
+      // style += '.emoji { font-size: 0; }.emoji::before{display: inline-block;content: \'\';width: ' + iconSize + 'px;height: ' + iconSize + 'px;}';
+      // style += '.emoji{color: transparent;}.emoji::selection{color: transparent; background-color:highlight}';
 
       for (var g = 0; g < _EmojiUtil2.default.groups.length; g++) {
         var group = _EmojiUtil2.default.groups[g];
-        var _tab = tabs[g];
+        var d = group.dimensions;
+
         for (var e = 0; e < group.items.length; e++) {
-          var emojiId = group.items[e];
-          if (_EmojiUtil2.default.data.hasOwnProperty(emojiId)) {
-            (function () {
-              var word = _EmojiUtil2.default.data[emojiId][_EmojiUtil2.default.EMOJI_ALIASES] || '';
-              var emojiElem = (0, _jquery2.default)('<a>').data('emoji', word).html(_EmojiArea2.default.createEmoji(word, _this3.o)).on('click', function () {
-                _this3.insertEmoji(word);
-              });
-              (0, _jquery2.default)(_tab).append(emojiElem);
-            })();
+          var key = group.items[e];
+          var emojiData = _EmojiUtil2.default.data[key];
+          if (!emojiData) continue;
+          var alias = emojiData[_EmojiUtil2.default.EMOJI_ALIASES];
+          if (alias) {
+            var row = e / d[0] | 0;
+            var col = e % d[0];
+            style += '.emoji-' + alias + '{' + 'background: url(\'' + assetPath + '/' + group.sprite + '\') ' + -iconSize * col + 'px ' + -iconSize * row + 'px no-repeat;' + 'background-size: ' + d[0] * iconSize + 'px ' + d[1] * iconSize + 'px;' + '}';
           }
         }
       }
-    }
-  }, {
-    key: 'insertEmoji',
-    value: function insertEmoji(emoji) {
-      if (typeof this.cb === 'function') this.cb(emoji, this.o);
-      this.hide();
-    }
-  }, {
-    key: 'reposition',
-    value: function reposition() {
-      if (!this.anchor || this.anchor.length === 0) return;
 
-      var $a = (0, _jquery2.default)(this.anchor);
-      var offset = $a.offset();
-      this.$p.css(_defineProperty({
-        top: offset.top + this.anchor.outerHeight()
-      }, this.anchorPosition, offset.left));
+      return style;
     }
   }, {
-    key: 'show',
-    value: function show(insertCallback, anchor, anchorPosition) {
-      this.cb = insertCallback;
-      this.anchor = anchor;
+    key: 'injectImageStyles',
+    value: function injectImageStyles() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-      if (anchorPosition !== 'right') this.anchorPosition = 'left';else this.anchorPosition = 'right';
-
-      this.reposition();
-      this.$p.show();
-    }
-  }, {
-    key: 'hide',
-    value: function hide() {
-      this.$p.hide();
-    }
-  }, {
-    key: 'isVisible',
-    value: function isVisible() {
-      return this.$p.is(':visible');
+      (0, _jquery2.default)('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo("head");
     }
   }]);
 
-  return EmojiPicker;
+  return EmojiStyleGenerator;
 }();
 
-exports.default = EmojiPicker;
-
-
-EmojiPicker.show = function () {
-  var globalPicker = null;
-  return function (insertCallback, anchor) {
-    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : _EmojiArea2.default.DEFAULTS;
-
-    var picker = globalPicker;
-    if (!options.globalPicker) picker = new EmojiPicker(options);
-    if (!picker) picker = globalPicker = new EmojiPicker(options);
-    picker.show(insertCallback, anchor, options.anchorPosition);
-    return picker;
-  };
-}();
-
-var KEY_ESC = 27;
-var KEY_TAB = 9;
+exports.default = EmojiStyleGenerator;
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2355,88 +2364,6 @@ var ascii = {
 exports.default = { data: data, groups: groups, ascii: ascii };
 
 /***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-exports.default = generatePlugin;
-
-var _jquery = __webpack_require__(0);
-
-var _jquery2 = _interopRequireDefault(_jquery);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-/**
- * Generate a jQuery plugin
- * @param pluginName [string] Plugin name
- * @param className [object] Class of the plugin
- * @param shortHand [bool] Generate a shorthand as $.pluginName
- *
- * @example
- * import plugin from 'plugin';
- *
- * class MyPlugin {
- *     constructor(element, options) {
- *         // ...
- *     }
- * }
- *
- * MyPlugin.DEFAULTS = {};
- *
- * plugin('myPlugin', MyPlugin');
- */
-function generatePlugin(pluginName, className) {
-  var shortHand = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-  var instanceName = '__' + pluginName;
-  var old = _jquery2.default.fn[pluginName];
-
-  _jquery2.default.fn[pluginName] = function (option) {
-    return this.each(function () {
-      var $this = (0, _jquery2.default)(this);
-      var instance = $this.data(instanceName);
-
-      if (!instance && option !== 'destroy') {
-        var _options = _jquery2.default.extend({}, className.DEFAULTS, $this.data(), (typeof option === 'undefined' ? 'undefined' : _typeof(option)) === 'object' && option);
-        $this.data(instanceName, instance = new className(this, _options));
-      } else if (typeof instance.configure === 'function') {
-        instance.configure(options);
-      }
-
-      if (typeof option === 'string') {
-        if (option === 'destroy') {
-          instance.destroy();
-          $this.data(instanceName, false);
-        } else {
-          instance[option]();
-        }
-      }
-    });
-  };
-
-  // - Short hand
-  if (shortHand) {
-    _jquery2.default[pluginName] = function (options) {
-      return (0, _jquery2.default)({})[pluginName](options);
-    };
-  }
-
-  // - No conflict
-  _jquery2.default.fn[pluginName].noConflict = function () {
-    return _jquery2.default.fn[pluginName] = old;
-  };
-}
-
-/***/ }),
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2448,8 +2375,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * This class generated css style which can automatically be injected into the head.
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * This is not needed in unicode or image mode.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * Emoji Picker (Dropdown) can work as global singleton (one dropdown for all inputs on the page)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * or with separate instances (and settings) for each input.
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       *
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * @author Wolfgang Stöttinger
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       */
@@ -2459,6 +2386,10 @@ var _jquery = __webpack_require__(0);
 
 var _jquery2 = _interopRequireDefault(_jquery);
 
+var _EmojiArea = __webpack_require__(2);
+
+var _EmojiArea2 = _interopRequireDefault(_EmojiArea);
+
 var _EmojiUtil = __webpack_require__(1);
 
 var _EmojiUtil2 = _interopRequireDefault(_EmojiUtil);
@@ -2467,56 +2398,161 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var EmojiStyleGenerator = function () {
-  function EmojiStyleGenerator() {
-    _classCallCheck(this, EmojiStyleGenerator);
+var EmojiPicker = function () {
+  function EmojiPicker() {
+    var _this = this;
+
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _EmojiArea2.default.DEFAULTS;
+
+    _classCallCheck(this, EmojiPicker);
+
+    this.o = options;
+    var $body = (0, _jquery2.default)(document.body);
+    $body.on('keydown', function (e) {
+      if (e.keyCode === KEY_ESC || e.keyCode === KEY_TAB) _this.hide();
+    });
+    $body.on('click', function () {
+      _this.hide();
+    });
+    (0, _jquery2.default)(window).on('resize', function () {
+      if (_this.$p.is(':visible')) {
+        _this.reposition();
+      }
+    });
+
+    this.$p = (0, _jquery2.default)('<div>').addClass('emoji-picker').on('mouseup click', function (e) {
+      return e.stopPropagation() && false;
+    }).hide().appendTo($body);
+
+    var tabs = this.loadPicker();
+    setTimeout(this.loadEmojis.bind(this, tabs), 100);
   }
 
-  _createClass(EmojiStyleGenerator, null, [{
-    key: 'createImageStyles',
-    value: function createImageStyles() {
-      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  _createClass(EmojiPicker, [{
+    key: 'loadPicker',
+    value: function loadPicker() {
+      var _this2 = this;
 
-      var iconSize = options.iconSize || 25;
-      var assetPath = options.assetPath || '../images';
+      var ul = (0, _jquery2.default)('<ul>').addClass('emoji-selector nav nav-tabs');
+      var tabs = (0, _jquery2.default)('<div>').addClass('tab-content');
 
-      var style = '';
-      // with before pseudo doesn't work with selection
-      // style += '.emoji { font-size: 0; }.emoji::before{display: inline-block;content: \'\';width: ' + iconSize + 'px;height: ' + iconSize + 'px;}';
-      // style += '.emoji{color: transparent;}.emoji::selection{color: transparent; background-color:highlight}';
+      var _loop = function _loop(g) {
+        var group = _EmojiUtil2.default.groups[g];
+        var id = 'group_' + group.name;
+        var gid = '#' + id;
+
+        var a = (0, _jquery2.default)('<a>').html(_EmojiArea2.default.createEmoji(group.name, _this2.o)).data('toggle', 'tab').attr('href', gid);
+
+        ul.append((0, _jquery2.default)('<li>').append(a));
+
+        var tab = (0, _jquery2.default)('<div>').attr('id', id).addClass('emoji-group tab-pane').data('group', group.name);
+
+        a.on('click', function (e) {
+          (0, _jquery2.default)('.tab-pane').not(tab).hide().removeClass('active');
+          tab.addClass('active').show();
+          e.preventDefault();
+        });
+        tabs.append(tab);
+      };
+
+      for (var g = 0; g < _EmojiUtil2.default.groups.length; g++) {
+        _loop(g);
+      }
+
+      tabs.find('.tab-pane').not(':first-child').hide().removeClass('active');
+
+      this.$p.append(ul).append(tabs);
+      return tabs.children();
+    }
+  }, {
+    key: 'loadEmojis',
+    value: function loadEmojis(tabs) {
+      var _this3 = this;
 
       for (var g = 0; g < _EmojiUtil2.default.groups.length; g++) {
         var group = _EmojiUtil2.default.groups[g];
-        var d = group.dimensions;
-
+        var _tab = tabs[g];
         for (var e = 0; e < group.items.length; e++) {
-          var key = group.items[e];
-          var emojiData = _EmojiUtil2.default.data[key];
-          if (!emojiData) continue;
-          var alias = emojiData[_EmojiUtil2.default.EMOJI_ALIASES];
-          if (alias) {
-            var row = e / d[0] | 0;
-            var col = e % d[0];
-            style += '.emoji-' + alias + '{' + 'background: url(\'' + assetPath + '/' + group.sprite + '\') ' + -iconSize * col + 'px ' + -iconSize * row + 'px no-repeat;' + 'background-size: ' + d[0] * iconSize + 'px ' + d[1] * iconSize + 'px;' + '}';
+          var emojiId = group.items[e];
+          if (_EmojiUtil2.default.data.hasOwnProperty(emojiId)) {
+            (function () {
+              var word = _EmojiUtil2.default.data[emojiId][_EmojiUtil2.default.EMOJI_ALIASES] || '';
+              var emojiElem = (0, _jquery2.default)('<a>').data('emoji', word).html(_EmojiArea2.default.createEmoji(word, _this3.o)).on('click', function () {
+                _this3.insertEmoji(word);
+              });
+              (0, _jquery2.default)(_tab).append(emojiElem);
+            })();
           }
         }
       }
-
-      return style;
     }
   }, {
-    key: 'injectImageStyles',
-    value: function injectImageStyles() {
-      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    key: 'insertEmoji',
+    value: function insertEmoji(emoji) {
+      if (typeof this.cb === 'function') this.cb(emoji, this.o);
+      this.hide();
+    }
+  }, {
+    key: 'reposition',
+    value: function reposition(anchor, options) {
+      if (!anchor || anchor.length === 0) return;
 
-      (0, _jquery2.default)('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo("head");
+      var $anchor = (0, _jquery2.default)(anchor);
+      var anchorOffset = $anchor.offset();
+      anchorOffset.right = anchorOffset.left + anchor.outerWidth() - this.$p.outerWidth();
+      this.$p.css({
+        top: anchorOffset.top + anchor.outerHeight() + (options.anchorOffsetY || 0),
+        left: anchorOffset[options.anchorAlignment] + (options.anchorOffsetX || 0)
+      });
+    }
+  }, {
+    key: 'show',
+    value: function show(insertCallback, anchor, options) {
+      this.cb = insertCallback;
+      this.reposition(anchor, options);
+      this.$p.show();
+      return this;
+    }
+  }, {
+    key: 'hide',
+    value: function hide() {
+      this.$p.hide();
+    }
+  }, {
+    key: 'isVisible',
+    value: function isVisible() {
+      return this.$p.is(':visible');
     }
   }]);
 
-  return EmojiStyleGenerator;
+  return EmojiPicker;
 }();
 
-exports.default = EmojiStyleGenerator;
+exports.default = EmojiPicker;
+
+
+EmojiPicker.globalPicker = null;
+
+EmojiPicker.show = function (insertCallback, anchor) {
+  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : _EmojiArea2.default.DEFAULTS;
+
+  var picker = EmojiPicker.globalPicker;
+  if (!options.globalPicker) picker = new EmojiPicker(options);
+  if (!picker) picker = EmojiPicker.globalPicker = new EmojiPicker(options);
+  picker.show(insertCallback, anchor, options);
+  return picker;
+};
+
+EmojiPicker.isVisible = function () {
+  return EmojiPicker.globalPicker && EmojiPicker.globalPicker.isVisible();
+};
+
+EmojiPicker.hide = function () {
+  !EmojiPicker.globalPicker || EmojiPicker.globalPicker.hide();
+};
+
+var KEY_ESC = 27;
+var KEY_TAB = 9;
 
 /***/ })
 /******/ ]);
