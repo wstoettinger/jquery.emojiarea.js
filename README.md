@@ -10,7 +10,7 @@ Out comes a much cleaner, smaller and more flexible emoji library than all other
 ## Installation
 
 ```
-npm i --save-dev jquery.emojiarea.js
+npm i --save jquery.emojiarea.js
 ```
 
 ### Versatile usage
