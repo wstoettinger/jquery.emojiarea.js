@@ -88,29 +88,24 @@ export default class EmojiPicker {
     this.hide();
   }
 
-  reposition() {
-    if (!this.anchor || this.anchor.length === 0)
+  reposition(anchor, options) {
+    if (!anchor || anchor.length === 0)
       return;
 
-    const $a = $(this.anchor);
-    const offset = $a.offset();
+    const $anchor = $(anchor);
+    const anchorOffset = $anchor.offset();
+    anchorOffset.right = anchorOffset.left + anchor.outerWidth() - this.$p.outerWidth();
     this.$p.css({
-      top: offset.top + this.anchor.outerHeight(),
-      [this.anchorPosition]: offset.left,
+      top: anchorOffset.top + anchor.outerHeight() + (options.anchorOffsetY || 0),
+      left: anchorOffset[options.anchorAlignment] + (options.anchorOffsetX || 0),
     });
   };
 
-  show(insertCallback, anchor, anchorPosition) {
+  show(insertCallback, anchor, options) {
     this.cb = insertCallback;
-    this.anchor = anchor;
-
-    if (anchorPosition !== 'right')
-      this.anchorPosition = 'left';
-    else
-      this.anchorPosition = 'right';
-
-    this.reposition();
+    this.reposition(anchor, options);
     this.$p.show();
+    return this;
   }
 
   hide() {
@@ -122,18 +117,25 @@ export default class EmojiPicker {
   }
 }
 
-EmojiPicker.show = (() => {
-  let globalPicker = null;
-  return function (insertCallback, anchor, options = EmojiArea.DEFAULTS) {
-    let picker = globalPicker;
-    if (!options.globalPicker)
-      picker = new EmojiPicker(options);
-    if (!picker)
-      picker = globalPicker = new EmojiPicker(options);
-    picker.show(insertCallback, anchor, options.anchorPosition);
-    return picker;
-  };
-})();
+EmojiPicker.globalPicker = null;
+
+EmojiPicker.show = function (insertCallback, anchor, options = EmojiArea.DEFAULTS) {
+  let picker = EmojiPicker.globalPicker;
+  if (!options.globalPicker)
+    picker = new EmojiPicker(options);
+  if (!picker)
+    picker = EmojiPicker.globalPicker = new EmojiPicker(options);
+  picker.show(insertCallback, anchor, options);
+  return picker;
+};
+
+EmojiPicker.isVisible = function () {
+  return EmojiPicker.globalPicker && EmojiPicker.globalPicker.isVisible();
+};
+
+EmojiPicker.hide = function () {
+  !EmojiPicker.globalPicker || EmojiPicker.globalPicker.hide();
+};
 
 const KEY_ESC = 27;
 const KEY_TAB = 9;

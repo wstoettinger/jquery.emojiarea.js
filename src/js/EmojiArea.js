@@ -170,10 +170,11 @@ export default class EmojiArea {
   }
 
   togglePicker(e) {
-    if (!this.picker || !this.picker.isVisible())
-      this.picker = EmojiPicker.show(this.insert.bind(this), this.$b, this.o);
+    const delegate = (this.picker || EmojiPicker);
+    if (!delegate.isVisible())
+      this.picker = delegate.show(this.insert.bind(this), this.$b, this.o);
     else
-      this.picker.hide();
+      delegate.hide();
 
     e.stopPropagation();
     return false;
@@ -227,8 +228,9 @@ EmojiArea.DEFAULTS = {
   inputSelector: 'input:text, textarea',
   buttonSelector: '>.emoji-button',
   inputEvent: /Trident/.test(navigator.userAgent) ? 'textinput' : 'input',
-  // todo: other pickerAnchorPositions:
-  pickerAnchor: 'left',
+  anchorAlignment: 'left', // can be left|right
+  anchorOffsetX: -5,
+  anchorOffsetY: 5,
   type: 'unicode', // can be one of (unicode|css|image)
   iconSize: 25, // only for css or image mode
   assetPath: '../images', // only for css or image mode
