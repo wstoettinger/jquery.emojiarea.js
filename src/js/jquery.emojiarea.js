@@ -23,5 +23,9 @@ $(() => {
   }
 });
 
-// expose EmojiArea
+// expose EmojiArea for modules
+export * from 'EmojiArea';
+
+// expose EmojiArea outside modules
 module.exports = EmojiArea;
+
