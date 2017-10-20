@@ -22,20 +22,10 @@ export default class EmojiUtil {
       const key = dataKeys[e];
       const emojiData = EmojiUtil.data[key];
       if (emojiData) {
-        let code = emojiData[EmojiUtil.EMOJI_UNICODE];
+        let code = emojiData[EmojiUtil.EMOJI_UNICODE][0];
 
         EmojiUtil.aliases[emojiData[EmojiUtil.EMOJI_ALIASES]] = key;
         EmojiUtil.unicodes[code] = key;
-
-        // also create unicode aliases for modified versions of emoticons
-        if (code.length <= 2) {
-          EmojiUtil.unicodes[code + EmojiUtil.MODIFIER_TEXT] = key;
-          EmojiUtil.unicodes[code + EmojiUtil.MODIFIER_EMOJI] = key;
-          if (EmojiUtil.MODIFIER) {
-            // force text or emoji presentation with modifier
-            emojiData[EmojiUtil.EMOJI_UNICODE] = code + EmojiUtil.MODIFIER;
-          }
-        }
       }
     }
   }
@@ -88,7 +78,7 @@ export default class EmojiUtil {
       const key = EmojiUtil.aliases[alias];
       const emojiData = EmojiUtil.data[key];
       if (emojiData && emojiData[EmojiUtil.EMOJI_UNICODE])
-        return emojiData[EmojiUtil.EMOJI_UNICODE];
+        return emojiData[EmojiUtil.EMOJI_UNICODE][0];
     }
     return null;
   }
@@ -118,8 +108,8 @@ EmojiUtil.ascii = Data.ascii;
 
 EmojiUtil.EMOJI_UNICODE = 0;
 EmojiUtil.EMOJI_ALIASES = 1;
-EmojiUtil.MODIFIER_TEXT = '\uFE0E';
-EmojiUtil.MODIFIER_EMOJI = '\uFE0F';
-EmojiUtil.MODIFIER = EmojiUtil.MODIFIER_EMOJI;
+// EmojiUtil.MODIFIER_TEXT = '\uFE0E';
+// EmojiUtil.MODIFIER_EMOJI = '\uFE0F';
+// EmojiUtil.MODIFIER = EmojiUtil.MODIFIER_EMOJI;
 
 EmojiUtil.initialize();
