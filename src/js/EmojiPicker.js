@@ -19,6 +19,7 @@ export default class EmojiPicker {
 
     this.$p = $('<div>')
       .addClass('emoji-picker')
+      .attr('data-picker-type', options.type) // $.data() here not possible, doesn't change dom
       .on('mouseup click', (e) => e.stopPropagation() && false)
       .hide()
       .appendTo($body);
@@ -104,6 +105,7 @@ export default class EmojiPicker {
   show(insertCallback, anchor, options) {
     this.cb = insertCallback;
     this.reposition(anchor, options);
+    this.$p.attr('data-picker-type', options.type); // $.data() here not possible, doesn't change dom
     this.$p.show();
     return this;
   }
