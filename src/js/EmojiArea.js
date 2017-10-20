@@ -24,22 +24,30 @@ export default class EmojiArea {
         .attr('contentEditable', true)
         .text(this.$ti.text())
         .on(options.inputEvent, this.onInput.bind(this))
+        .on(options.keyEvent, this.onKey.bind(this))
         .on('copy', options.textClipboard ? this.clipboardCopy.bind(this) : () => true)
         .on('paste', options.textClipboard ? this.clipboardPaste.bind(this) : () => true)
         .appendTo(this.$ea);
 
-      this._processElement(this.$e);
+      this.processContent();
+
+      this.selection = document.createRange();
+      this.selection.setStartBefore(this.$e[0].lastChild);
+      this.selection.collapse(true);
 
     } else {
       this.$e = this.$ti;
       this.$ti.on(options.inputEvent, () => {
         let val = this.$ti.val();
-        let parsed = EmojiArea.replaceAscii(this.o.asciiRegex, val);
+        let parsed = this.replaceAscii(val);
+        parsed = this.replaceAliases(parsed);
         if (parsed !== val) {
           this.$ti.val(parsed);
           this.$ti.trigger(this.o.inputEvent);
         }
       });
+      const startVal = this.$ti.val();
+      this.$ti[0].setSelectionRange(startVal.length, startVal.length);
     }
 
     $(document.body).on('mousedown', this.saveSelection.bind(this));
@@ -78,7 +86,7 @@ export default class EmojiArea {
     const e = this.$e[0];
     if (!event || event.target !== e) {
       // for unicode mode, the textarea itself:
-      if (typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
+      if (this.$e === this.$ti && typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
         this.tiSelection = { start: e.selectionStart, end: e.selectionEnd };
       }
       else {
@@ -107,14 +115,15 @@ export default class EmojiArea {
       insert = document.importNode(insert, true); // this is necessary for IE
       range.deleteContents();
       range.insertNode(insert);
-      range.selectNode(insert);
-      range.collapse(false);
+      range.setStartAfter(insert);
+      range.setEndAfter(insert);
       return true;
     }
-    else {
+    else if (this.$e === this.$ti) {
       const sel = this.tiSelection;
       let val = this.$e.val();
       this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
+      return true;
     }
     return false;
   }
@@ -124,14 +133,31 @@ export default class EmojiArea {
     this.updateInput();
   }
 
+  onKey(e) {
+    if (e.originalEvent.keyCode === 13) { // catch enter and just insert <br>
+      this.saveSelection();
+      this.replaceSelection('<br>');
+
+      if (this.$e[0].lastChild.nodeName !== 'BR') {
+        this.$e.append('<br>'); // this is necessary to render correctly.
+      }
+
+      e.stopPropagation();
+      return false;
+    }
+  }
+
   updateInput() {
-    this.$ti.val(this.$e.text());
+    this.$ti.val(this.$e[0].innerText || this.$e[0].textContent);
     this.$ti.trigger(this.o.inputEvent);
   }
 
   processContent() {
     this.saveSelection();
     this._processElement(this.$e);
+    if (this.$e[0].lastChild.nodeName !== 'BR') {
+      this.$e.append('<br>'); // this is necessary to render correctly.
+    }
   }
 
   _processElement(element = this.$e) {
@@ -150,19 +176,18 @@ export default class EmojiArea {
         let parsed = e.nodeValue;
 
         if (this.o.type !== 'unicode') { //convert existing unicodes
-          parsed = EmojiArea.replaceUnicodes(this.o.unicodeRegex, parsed);
+          parsed = this.replaceUnicodes(parsed);
         }
 
-        parsed = EmojiArea.replaceAscii(this.o.asciiRegex, parsed);
-        parsed = EmojiArea.replaceAliases(this.o.aliasRegex, parsed);
+        parsed = this.replaceAscii(parsed);
+        parsed = this.replaceAliases(parsed);
 
         if (parsed !== e.nodeValue) {
           const content = $.parseHTML(parsed);
           const wasSelected = this.selection && this.selection.endContainer === e;
           $(e).before(content).remove();
-          const select = content.filter((e) => e.nodeType !== 3)[0];
-          if (wasSelected && select) {
-            this.selection.selectNode(select);
+          if (wasSelected) {
+            this.selection.setStartAfter(content[content.length-1]);
             this.selection.collapse(false);
           }
         }
@@ -170,16 +195,16 @@ export default class EmojiArea {
     });
   }
 
-  static replaceUnicodes(regex, text) {
-    return text.replace(regex, (match, unicode) => {
+  replaceUnicodes(text) {
+    return text.replace(this.o.unicodeRegex, (match, unicode) => {
       return Emoji.checkUnicode(unicode)
         ? EmojiArea.createEmoji(null, this.o, unicode)
         : unicode;
     });
   }
 
-  static replaceAscii(regex, text) {
-    return text.replace(regex, (match, ascii) => {
+  replaceAscii(text) {
+    return text.replace(this.o.asciiRegex, (match, ascii) => {
       if (Emoji.checkAscii(ascii)) {
         const alias = Emoji.aliasFromAscii(ascii);
         if (alias)
@@ -189,8 +214,8 @@ export default class EmojiArea {
     });
   }
 
-  static replaceAliases(regex, text) {
-    return text.replace(regex, (match, alias) => {
+  replaceAliases(text) {
+    return text.replace(this.o.aliasRegex, (match, alias) => {
       return Emoji.checkAlias(alias)
         ? EmojiArea.createEmoji(alias, this.o)
         : ':' + alias + ':';
@@ -212,7 +237,6 @@ export default class EmojiArea {
     const content = EmojiArea.createEmoji(alias, this.o);
     if (!this.replaceSelection(content)) {
       this.$e.append(content);
-      // todo place cursor to end of textfield
     }
     this.$e.focus().trigger(this.o.inputEvent);
   }
@@ -257,6 +281,7 @@ EmojiArea.DEFAULTS = {
   inputSelector: 'input:text, textarea',
   buttonSelector: '>.emoji-button',
   inputEvent: /Trident/.test(navigator.userAgent) ? 'textinput' : 'input',
+  keyEvent: 'keypress',
   anchorAlignment: 'left', // can be left|right
   anchorOffsetX: -5,
   anchorOffsetY: 5,
