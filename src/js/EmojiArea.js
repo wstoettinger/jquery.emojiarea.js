@@ -37,19 +37,16 @@ export default class EmojiArea {
 
     } else {
       this.$e = this.$ti;
-      this.$ti.on(options.inputEvent, () => {
-        let val = this.$ti.val();
-        let parsed = this.replaceAscii(val);
-        parsed = this.replaceAliases(parsed);
-        if (parsed !== val) {
-          this.$ti.val(parsed);
-          this.$ti.trigger(this.o.inputEvent);
-        }
-      });
-      const startVal = this.$ti.val();
-      this.$ti[0].setSelectionRange(startVal.length, startVal.length);
+      this.$ti.on(options.inputEvent, this.processTextContent.bind(this));
+
+      this.processTextContent();
+
+      const v = this.$ti.val();
+      this.$ti[0].setSelectionRange(v.length, v.length);
+      this.tiSelection = { start: v.length, end: v.length };
     }
 
+    this.$e.focusout(() => {this.saveSel = true;});
     $(document.body).on('mousedown', this.saveSelection.bind(this));
   }
 
@@ -84,7 +81,7 @@ export default class EmojiArea {
 
   saveSelection(event) {
     const e = this.$e[0];
-    if (!event || event.target !== e) {
+    if (!event || (event.target !== e && this.saveSel)) {
       // for unicode mode, the textarea itself:
       if (this.$e === this.$ti && typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
         this.tiSelection = { start: e.selectionStart, end: e.selectionEnd };
@@ -95,34 +92,42 @@ export default class EmojiArea {
           this.selection = sel.getRangeAt(0);
         }
       }
+      // only save seleciton once after blur
+      this.saveSel = false;
     }
-  }
-
-  restoreSelection() {
-    const range = this.selection;
-    if (range) {
-      const s = window.getSelection();
-      s.removeAllRanges();
-      s.addRange(range);
-    }
-    return range;
   }
 
   replaceSelection(content) {
-    const range = this.restoreSelection();
+    const range = this.selection;
     if (range) {
-      let insert = $.parseHTML(content)[0];
-      insert = document.importNode(insert, true); // this is necessary for IE
-      range.deleteContents();
-      range.insertNode(insert);
-      range.setStartAfter(insert);
-      range.setEndAfter(insert);
+      // restore selection:
+      const s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(range);
+      this.$e[0].focus();
+      if (!document.execCommand('insertHTML', false, content)) {
+        let insert = $.parseHTML(content)[0];
+        insert = document.importNode(insert, true); // this is necessary for IE
+        range.deleteContents();
+        range.insertNode(insert);
+        range.setStartAfter(insert);
+        range.setEndAfter(insert);
+      }
       return true;
     }
     else if (this.$e === this.$ti) {
       const sel = this.tiSelection;
-      let val = this.$e.val();
-      this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
+
+      // restore selection:
+      this.$ti[0].focus();
+      this.$ti[0].setSelectionRange(sel.start, sel.end);
+
+      if (!document.execCommand('insertText', false, content)) {
+        let val = this.$e.val();
+        this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
+        sel.start = sel.end = sel.start + content.length;
+        this.$ti[0].setSelectionRange(sel.start, sel.end);
+      }
       return true;
     }
     return false;
@@ -150,6 +155,16 @@ export default class EmojiArea {
   updateInput() {
     this.$ti.val(this.$e[0].innerText || this.$e[0].textContent);
     this.$ti.trigger(this.o.inputEvent);
+  }
+
+  processTextContent() {
+    let val = this.$ti.val();
+    let parsed = this.replaceAscii(val);
+    parsed = this.replaceAliases(parsed);
+    if (parsed !== val) {
+      this.$ti.val(parsed);
+      this.$ti.focus().trigger(this.o.inputEvent);
+    }
   }
 
   processContent() {
@@ -187,7 +202,7 @@ export default class EmojiArea {
           const wasSelected = this.selection && this.selection.endContainer === e;
           $(e).before(content).remove();
           if (wasSelected) {
-            this.selection.setStartAfter(content[content.length-1]);
+            this.selection.setStartAfter(content[content.length - 1]);
             this.selection.collapse(false);
           }
         }
@@ -222,14 +237,14 @@ export default class EmojiArea {
     });
   }
 
-  togglePicker(e) {
+  togglePicker() {
+    this.saveSelection();
     const delegate = (this.picker || EmojiPicker);
     if (!delegate.isVisible())
       this.picker = delegate.show(this.insert.bind(this), this.$b, this.o);
     else
       delegate.hide();
 
-    e.stopPropagation();
     return false;
   }
 

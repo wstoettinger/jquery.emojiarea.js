@@ -62,7 +62,7 @@ var EmojiArea =
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "8656d50e9eaffa4e76a3"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "9a5f8de4cb3c2274a9a0"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -949,19 +949,18 @@ var EmojiArea = function () {
       this.selection.collapse(true);
     } else {
       this.$e = this.$ti;
-      this.$ti.on(options.inputEvent, function () {
-        var val = _this.$ti.val();
-        var parsed = _this.replaceAscii(val);
-        parsed = _this.replaceAliases(parsed);
-        if (parsed !== val) {
-          _this.$ti.val(parsed);
-          _this.$ti.trigger(_this.o.inputEvent);
-        }
-      });
-      var startVal = this.$ti.val();
-      this.$ti[0].setSelectionRange(startVal.length, startVal.length);
+      this.$ti.on(options.inputEvent, this.processTextContent.bind(this));
+
+      this.processTextContent();
+
+      var v = this.$ti.val();
+      this.$ti[0].setSelectionRange(v.length, v.length);
+      this.tiSelection = { start: v.length, end: v.length };
     }
 
+    this.$e.focusout(function () {
+      _this.saveSel = true;
+    });
     (0, _jquery2.default)(document.body).on('mousedown', this.saveSelection.bind(this));
   }
 
@@ -1003,7 +1002,7 @@ var EmojiArea = function () {
     key: 'saveSelection',
     value: function saveSelection(event) {
       var e = this.$e[0];
-      if (!event || event.target !== e) {
+      if (!event || event.target !== e && this.saveSel) {
         // for unicode mode, the textarea itself:
         if (this.$e === this.$ti && typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
           this.tiSelection = { start: e.selectionStart, end: e.selectionEnd };
@@ -1013,35 +1012,42 @@ var EmojiArea = function () {
             this.selection = sel.getRangeAt(0);
           }
         }
+        // only save seleciton once after blur
+        this.saveSel = false;
       }
-    }
-  }, {
-    key: 'restoreSelection',
-    value: function restoreSelection() {
-      var range = this.selection;
-      if (range) {
-        var s = window.getSelection();
-        s.removeAllRanges();
-        s.addRange(range);
-      }
-      return range;
     }
   }, {
     key: 'replaceSelection',
     value: function replaceSelection(content) {
-      var range = this.restoreSelection();
+      var range = this.selection;
       if (range) {
-        var insert = _jquery2.default.parseHTML(content)[0];
-        insert = document.importNode(insert, true); // this is necessary for IE
-        range.deleteContents();
-        range.insertNode(insert);
-        range.setStartAfter(insert);
-        range.setEndAfter(insert);
+        // restore selection:
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(range);
+        this.$e[0].focus();
+        if (!document.execCommand('insertHTML', false, content)) {
+          var insert = _jquery2.default.parseHTML(content)[0];
+          insert = document.importNode(insert, true); // this is necessary for IE
+          range.deleteContents();
+          range.insertNode(insert);
+          range.setStartAfter(insert);
+          range.setEndAfter(insert);
+        }
         return true;
       } else if (this.$e === this.$ti) {
         var sel = this.tiSelection;
-        var val = this.$e.val();
-        this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
+
+        // restore selection:
+        this.$ti[0].focus();
+        this.$ti[0].setSelectionRange(sel.start, sel.end);
+
+        if (!document.execCommand('insertText', false, content)) {
+          var val = this.$e.val();
+          this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
+          sel.start = sel.end = sel.start + content.length;
+          this.$ti[0].setSelectionRange(sel.start, sel.end);
+        }
         return true;
       }
       return false;
@@ -1073,6 +1079,17 @@ var EmojiArea = function () {
     value: function updateInput() {
       this.$ti.val(this.$e[0].innerText || this.$e[0].textContent);
       this.$ti.trigger(this.o.inputEvent);
+    }
+  }, {
+    key: 'processTextContent',
+    value: function processTextContent() {
+      var val = this.$ti.val();
+      var parsed = this.replaceAscii(val);
+      parsed = this.replaceAliases(parsed);
+      if (parsed !== val) {
+        this.$ti.val(parsed);
+        this.$ti.focus().trigger(this.o.inputEvent);
+      }
     }
   }, {
     key: 'processContent',
@@ -1158,11 +1175,11 @@ var EmojiArea = function () {
     }
   }, {
     key: 'togglePicker',
-    value: function togglePicker(e) {
+    value: function togglePicker() {
+      this.saveSelection();
       var delegate = this.picker || _EmojiPicker2.default;
       if (!delegate.isVisible()) this.picker = delegate.show(this.insert.bind(this), this.$b, this.o);else delegate.hide();
 
-      e.stopPropagation();
       return false;
     }
   }, {
