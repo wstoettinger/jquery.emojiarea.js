@@ -108,8 +108,5 @@ EmojiUtil.ascii = Data.ascii;
 
 EmojiUtil.EMOJI_UNICODE = 0;
 EmojiUtil.EMOJI_ALIASES = 1;
-// EmojiUtil.MODIFIER_TEXT = '\uFE0E';
-// EmojiUtil.MODIFIER_EMOJI = '\uFE0F';
-// EmojiUtil.MODIFIER = EmojiUtil.MODIFIER_EMOJI;
 
 EmojiUtil.initialize();

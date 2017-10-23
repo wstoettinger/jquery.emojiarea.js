@@ -12,20 +12,9 @@ import EmojiArea from 'EmojiArea';
 generatePlugin('emojiarea', EmojiArea);
 
 /**
- * call auto initialization. This can be supresst by setting the static EmojiArea.AUTOINIT parameter to false
+ * call auto initialization.
  */
 $(() => {
-  if (EmojiArea.AUTOINIT) {
-    $('[data-emojiarea]').emojiarea();
-  }
-  if (EmojiArea.INJECT_STYLES) {
-    EmojiStyleGenerator.injectImageStyles(EmojiArea.DEFAULTS);
-  }
+  $('[data-emoji-inject-style]').each((i, e) => {EmojiStyleGenerator.injectImageStyles(e); });
+  $('[data-emojiarea]').emojiarea();
 });
-
-// expose EmojiArea for modules
-// export * from 'EmojiArea';
-
-// expose EmojiArea outside modules
-//module.exports = EmojiArea;
-

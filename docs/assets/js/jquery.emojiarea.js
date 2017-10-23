@@ -62,7 +62,7 @@ var EmojiArea =
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "9a5f8de4cb3c2274a9a0"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "6d46dee1dfa855451ac9"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -882,9 +882,6 @@ EmojiUtil.ascii = _EmojiData2.default.ascii;
 
 EmojiUtil.EMOJI_UNICODE = 0;
 EmojiUtil.EMOJI_ALIASES = 1;
-// EmojiUtil.MODIFIER_TEXT = '\uFE0E';
-// EmojiUtil.MODIFIER_EMOJI = '\uFE0F';
-// EmojiUtil.MODIFIER = EmojiUtil.MODIFIER_EMOJI;
 
 EmojiUtil.initialize();
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
@@ -925,8 +922,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var EmojiArea = function () {
   function EmojiArea(emojiArea, options) {
-    var _this = this;
-
     _classCallCheck(this, EmojiArea);
 
     this.o = _jquery2.default.extend({}, EmojiArea.DEFAULTS, options);
@@ -944,9 +939,9 @@ var EmojiArea = function () {
 
       this.processContent();
 
-      this.selection = document.createRange();
-      this.selection.setStartBefore(this.$e[0].lastChild);
-      this.selection.collapse(true);
+      this.htmlSel = document.createRange();
+      this.htmlSel.setStartBefore(this.$e[0].lastChild);
+      this.htmlSel.collapse(true);
     } else {
       this.$e = this.$ti;
       this.$ti.on(options.inputEvent, this.processTextContent.bind(this));
@@ -955,13 +950,11 @@ var EmojiArea = function () {
 
       var v = this.$ti.val();
       this.$ti[0].setSelectionRange(v.length, v.length);
-      this.tiSelection = { start: v.length, end: v.length };
+      this.textSel = { start: v.length, end: v.length };
     }
 
-    this.$e.focusout(function () {
-      _this.saveSel = true;
-    });
-    (0, _jquery2.default)(document.body).on('mousedown', this.saveSelection.bind(this));
+    this.$e.focusout(this.saveSelection.bind(this)).focus(this.restoreSelection.bind(this));
+    // $(document.body).on('mousedown', this.saveSelection.bind(this));
   }
 
   //
@@ -985,13 +978,19 @@ var EmojiArea = function () {
     value: function clipboardPaste(e) {
       // only allow to paste plain text
       var cbd = e.originalEvent.clipboardData || window.clipboardData;
-      var data = window.clipboardData ? cbd.getData('text') : cbd.getData('text/plain');
+      var content = window.clipboardData ? cbd.getData('text') : cbd.getData('text/plain');
 
-      this.saveSelection();
-      this.selection.insertNode(document.createTextNode(data));
-      this.selection.collapse(false);
+      if (!document.execCommand('insertText', false, content)) {
+        this.saveSelection();
+        var range = this.htmlSel;
+        var insert = document.createTextNode(content);
+        range.deleteContents();
+        range.insertNode(insert);
+        range.setStartAfter(insert);
+        range.setEndAfter(insert);
+        setTimeout(this.onInput.bind(this), 0);
+      }
       e.preventDefault();
-      setTimeout(this.onInput.bind(this), 0);
     }
 
     //
@@ -1000,53 +999,61 @@ var EmojiArea = function () {
 
   }, {
     key: 'saveSelection',
-    value: function saveSelection(event) {
+    value: function saveSelection() {
       var e = this.$e[0];
-      if (!event || event.target !== e && this.saveSel) {
-        // for unicode mode, the textarea itself:
-        if (this.$e === this.$ti && typeof e.selectionStart === "number" && typeof e.selectionEnd === "number") {
-          this.tiSelection = { start: e.selectionStart, end: e.selectionEnd };
-        } else {
-          var sel = window.getSelection();
-          if (sel.focusNode && (sel.focusNode === e || sel.focusNode.parentNode === e)) {
-            this.selection = sel.getRangeAt(0);
-          }
+      // for unicode mode, the textarea itself:
+      if (this.$e === this.$ti && e.selectionStart && e.selectionEnd) {
+        this.textSel = { start: e.selectionStart, end: e.selectionEnd };
+      } else {
+        var sel = window.getSelection();
+        if (sel.focusNode && (sel.focusNode === e || sel.focusNode.parentNode === e)) {
+          this.htmlSel = sel.getRangeAt(0);
         }
-        // only save seleciton once after blur
-        this.saveSel = false;
+      }
+    }
+  }, {
+    key: 'restoreSelection',
+    value: function restoreSelection(event) {
+      var hSel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.htmlSel;
+      var tSel = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : this.textSel;
+
+      if (hSel) {
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(hSel);
+      } else if (tSel) {
+        if (!event || event.type !== 'focus') {
+          this.$ti[0].focus();
+        }
+        this.$ti[0].setSelectionRange(tSel.start, tSel.end);
       }
     }
   }, {
     key: 'replaceSelection',
     value: function replaceSelection(content) {
-      var range = this.selection;
-      if (range) {
-        // restore selection:
-        var s = window.getSelection();
-        s.removeAllRanges();
-        s.addRange(range);
-        this.$e[0].focus();
+      var hSel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.htmlSel;
+      var tSel = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : this.textSel;
+
+      this.restoreSelection(null, hSel, tSel);
+      if (hSel) {
         if (!document.execCommand('insertHTML', false, content)) {
-          var insert = _jquery2.default.parseHTML(content)[0];
-          insert = document.importNode(insert, true); // this is necessary for IE
-          range.deleteContents();
-          range.insertNode(insert);
-          range.setStartAfter(insert);
-          range.setEndAfter(insert);
+          // let insert = $.parseHTML(content)[0];
+          // insert = document.importNode(insert, true); // this is necessary for IE
+          hSel.deleteContents();
+          var insert = hSel.createContextualFragment(content);
+          hSel.insertNode(insert);
+          hSel.collapse(false);
+          // hSel.setStartAfter(insert.lastChild);
+          // hSel.setEndAfter(insert.lastChild);
+          return insert;
         }
         return true;
-      } else if (this.$e === this.$ti) {
-        var sel = this.tiSelection;
-
-        // restore selection:
-        this.$ti[0].focus();
-        this.$ti[0].setSelectionRange(sel.start, sel.end);
-
+      } else if (tSel) {
         if (!document.execCommand('insertText', false, content)) {
           var val = this.$e.val();
-          this.$e.val(val.slice(0, sel.start) + content + val.slice(sel.end));
-          sel.start = sel.end = sel.start + content.length;
-          this.$ti[0].setSelectionRange(sel.start, sel.end);
+          this.$e.val(val.slice(0, tSel.start) + content + val.slice(tSel.end));
+          tSel.start = tSel.end = tSel.start + content.length;
+          this.$ti[0].setSelectionRange(tSel.start, tSel.end);
         }
         return true;
       }
@@ -1054,9 +1061,11 @@ var EmojiArea = function () {
     }
   }, {
     key: 'onInput',
-    value: function onInput() {
-      this.processContent();
-      this.updateInput();
+    value: function onInput(event) {
+      if (!event || event.originalEvent && event.originalEvent.inputType !== 'historyUndo') {
+        this.processContent();
+        this.updateInput();
+      }
     }
   }, {
     key: 'onKey',
@@ -1082,13 +1091,18 @@ var EmojiArea = function () {
     }
   }, {
     key: 'processTextContent',
-    value: function processTextContent() {
-      var val = this.$ti.val();
-      var parsed = this.replaceAscii(val);
-      parsed = this.replaceAliases(parsed);
-      if (parsed !== val) {
-        this.$ti.val(parsed);
-        this.$ti.focus().trigger(this.o.inputEvent);
+    value: function processTextContent(event) {
+      if (!event || event.originalEvent && event.originalEvent.inputType !== 'historyUndo') {
+        var val = this.$ti.val();
+        var parsed = this.replaceAscii(val);
+        parsed = this.replaceAliases(parsed);
+        if (parsed !== val) {
+          var sel = parsed.length - (val.length - this.$ti[0].selectionEnd);
+          this.$ti.val(parsed);
+          this.$ti[0].setSelectionRange(sel, sel);
+          this.textSel = { start: sel, end: sel };
+          this.$ti.focus().trigger(this.o.inputEvent);
+        }
       }
     }
   }, {
@@ -1103,7 +1117,7 @@ var EmojiArea = function () {
   }, {
     key: '_processElement',
     value: function _processElement() {
-      var _this2 = this;
+      var _this = this;
 
       var element = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.$e;
 
@@ -1116,27 +1130,40 @@ var EmojiArea = function () {
           // element or document fragment
           var $e = (0, _jquery2.default)(e);
           if (!$e.is('.emoji')) // skip emojis
-            _this2._processElement($e);
+            {
+              _this._processElement($e);
+            }
         } else if (e.nodeType === 3) {
           // text node
           // replace unicodes
           var parsed = e.nodeValue;
 
-          if (_this2.o.type !== 'unicode') {
+          if (_this.o.type !== 'unicode') {
             //convert existing unicodes
-            parsed = _this2.replaceUnicodes(parsed);
+            parsed = _this.replaceUnicodes(parsed);
           }
 
-          parsed = _this2.replaceAscii(parsed);
-          parsed = _this2.replaceAliases(parsed);
+          parsed = _this.replaceAscii(parsed);
+          parsed = _this.replaceAliases(parsed);
 
           if (parsed !== e.nodeValue) {
-            var content = _jquery2.default.parseHTML(parsed);
-            var wasSelected = _this2.selection && _this2.selection.endContainer === e;
-            (0, _jquery2.default)(e).before(content).remove();
-            if (wasSelected) {
-              _this2.selection.setStartAfter(content[content.length - 1]);
-              _this2.selection.collapse(false);
+            var isSelected = _this.htmlSel && _this.htmlSel.endContainer === e;
+            var range = isSelected ? _this.htmlSel : document.createRange();
+            var carret = _this.htmlSel ? e.nodeValue.length - _this.htmlSel.endOffset : 0;
+            var next = e.nextSibling;
+            range.selectNode(e);
+            _this.replaceSelection(parsed, range, null);
+            if (isSelected) {
+              if (next.previousSibling) {
+                var inserted = next.previousSibling;
+                range.setStart(inserted, inserted.length - carret);
+                range.setEnd(inserted, inserted.length - carret);
+                //this.htmlSel.setStartAfter(content[content.length - 1]);
+                //this.htmlSel.collapse(false);
+              } else {
+                range.setStartBefore(_this.$e[0].lastChild);
+                range.setEndBefore(_this.$e[0].lastChild);
+              }
             }
           }
         }
@@ -1145,21 +1172,23 @@ var EmojiArea = function () {
   }, {
     key: 'replaceUnicodes',
     value: function replaceUnicodes(text) {
-      var _this3 = this;
+      var _this2 = this;
 
       return text.replace(this.o.unicodeRegex, function (match, unicode) {
-        return _EmojiUtil2.default.checkUnicode(unicode) ? EmojiArea.createEmoji(null, _this3.o, unicode) : unicode;
+        return _EmojiUtil2.default.checkUnicode(unicode) ? EmojiArea.createEmoji(null, _this2.o, unicode) : unicode;
       });
     }
   }, {
     key: 'replaceAscii',
     value: function replaceAscii(text) {
-      var _this4 = this;
+      var _this3 = this;
 
       return text.replace(this.o.asciiRegex, function (match, ascii) {
         if (_EmojiUtil2.default.checkAscii(ascii)) {
           var alias = _EmojiUtil2.default.aliasFromAscii(ascii);
-          if (alias) return EmojiArea.createEmoji(alias, _this4.o);
+          if (alias) {
+            return EmojiArea.createEmoji(alias, _this3.o);
+          }
         }
         return ascii + ' ';
       });
@@ -1167,19 +1196,21 @@ var EmojiArea = function () {
   }, {
     key: 'replaceAliases',
     value: function replaceAliases(text) {
-      var _this5 = this;
+      var _this4 = this;
 
       return text.replace(this.o.aliasRegex, function (match, alias) {
-        return _EmojiUtil2.default.checkAlias(alias) ? EmojiArea.createEmoji(alias, _this5.o) : ':' + alias + ':';
+        return _EmojiUtil2.default.checkAlias(alias) ? EmojiArea.createEmoji(alias, _this4.o) : ':' + alias + ':';
       });
     }
   }, {
     key: 'togglePicker',
     value: function togglePicker() {
-      this.saveSelection();
       var delegate = this.picker || _EmojiPicker2.default;
-      if (!delegate.isVisible()) this.picker = delegate.show(this.insert.bind(this), this.$b, this.o);else delegate.hide();
-
+      if (!delegate.isVisible()) {
+        this.picker = delegate.show(this.insert.bind(this), this.$b, this.o);
+      } else {
+        delegate.hide();
+      }
       return false;
     }
   }, {
@@ -1187,9 +1218,8 @@ var EmojiArea = function () {
     value: function insert(alias) {
       var content = EmojiArea.createEmoji(alias, this.o);
       if (!this.replaceSelection(content)) {
-        this.$e.append(content);
+        this.$e.append(content).focus().trigger(this.o.inputEvent);
       }
-      this.$e.focus().trigger(this.o.inputEvent);
     }
   }], [{
     key: 'createEmoji',
@@ -1197,7 +1227,9 @@ var EmojiArea = function () {
       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : EmojiArea.DEFAULTS;
       var unicode = arguments[2];
 
-      if (!alias && !unicode) return;
+      if (!alias && !unicode) {
+        return;
+      }
       alias = alias || _EmojiUtil2.default.aliasFromUnicode(unicode);
       unicode = unicode || _EmojiUtil2.default.unicodeFromAlias(alias);
       return unicode ? options.type === 'unicode' ? unicode : options.type === 'css' ? EmojiArea.generateEmojiTag(unicode, alias) : EmojiArea.generateEmojiImg(unicode, alias, options) : alias;
@@ -1233,7 +1265,7 @@ exports.default = EmojiArea;
 
 EmojiArea.DEFAULTS = {
   aliasRegex: /:([a-z0-9_]+?):/g,
-  asciiRegex: /([\/<:;=8>][()D3opP*>\/\\|-]+) /g,
+  asciiRegex: /([\/<:;=8>(][()D3opPy*>\/\\|-]+) /g,
   unicodeRegex: /((?:[\xA9\xAE\u2122\u23E9-\u23EF\u23F3\u23F8-\u23FA\u24C2\u25B6\u2600-\u27BF\u2934\u2935\u2B05-\u2B07\u2B1B\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299]|\uD83C[\uDC04\uDCCF\uDD70\uDD71\uDD7E\uDD7F\uDD8E\uDD91-\uDE51\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEFF]|\uD83E[\uDD00-\uDDFF]))/g,
   inputSelector: 'input:text, textarea',
   buttonSelector: '>.emoji-button',
@@ -1286,22 +1318,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 (0, _generatePlugin2.default)('emojiarea', _EmojiArea2.default);
 
 /**
- * call auto initialization. This can be supresst by setting the static EmojiArea.AUTOINIT parameter to false
+ * call auto initialization.
  */
 (0, _jquery2.default)(function () {
-  if (_EmojiArea2.default.AUTOINIT) {
-    (0, _jquery2.default)('[data-emojiarea]').emojiarea();
-  }
-  if (_EmojiArea2.default.INJECT_STYLES) {
-    _EmojiStyleGenerator2.default.injectImageStyles(_EmojiArea2.default.DEFAULTS);
-  }
+  (0, _jquery2.default)('[data-emoji-inject-style]').each(function (i, e) {
+    _EmojiStyleGenerator2.default.injectImageStyles(e);
+  });
+  (0, _jquery2.default)('[data-emojiarea]').emojiarea();
 });
-
-// expose EmojiArea for modules
-// export * from 'EmojiArea';
-
-// expose EmojiArea outside modules
-//module.exports = EmojiArea;
 
 /***/ }),
 /* 4 */
@@ -1396,12 +1420,15 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * This class generated css style which can automatically be injected into the head.
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * This is not needed in unicode or image mode.
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      *
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @author Wolfgang Stöttinger
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+/**
+ * This class generated css style which can automatically be injected into a given element.
+ * This is not needed in unicode or image mode, only in css mode.
+ *
+ * @author Wolfgang Stöttinger
+ */
 
 
 var _jquery = __webpack_require__(0);
@@ -1411,6 +1438,10 @@ var _jquery2 = _interopRequireDefault(_jquery);
 var _EmojiUtil = __webpack_require__(1);
 
 var _EmojiUtil2 = _interopRequireDefault(_EmojiUtil);
+
+var _EmojiArea = __webpack_require__(2);
+
+var _EmojiArea2 = _interopRequireDefault(_EmojiArea);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1426,8 +1457,10 @@ var EmojiStyleGenerator = function () {
     value: function createImageStyles() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-      var iconSize = options.iconSize || 25;
-      var assetPath = options.assetPath || '../images';
+      options = _jquery2.default.extend({}, _EmojiArea2.default.DEFAULTS, (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && options);
+
+      var iconSize = options.iconSize;
+      var assetPath = options.assetPath;
 
       var style = '';
       // with before pseudo doesn't work with selection
@@ -1455,10 +1488,9 @@ var EmojiStyleGenerator = function () {
     }
   }, {
     key: 'injectImageStyles',
-    value: function injectImageStyles() {
-      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-      (0, _jquery2.default)('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo("head");
+    value: function injectImageStyles(element, options) {
+      element = element || 'head';
+      (0, _jquery2.default)('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo(element);
     }
   }]);
 
@@ -1890,8 +1922,8 @@ var data = {
   '1f44a': [['\uD83D\uDC4A'], 'facepunch'],
   '1f44b': [['\uD83D\uDC4B'], 'wave'],
   '1f44c': [['\uD83D\uDC4C'], 'ok_hand'],
-  '1f44d': [['\uD83D\uDC4D'], '+1'],
-  '1f44e': [['\uD83D\uDC4E'], '-1'],
+  '1f44d': [['\uD83D\uDC4D'], 'thumb_up'],
+  '1f44e': [['\uD83D\uDC4E'], 'thumb_down'],
   '1f44f': [['\uD83D\uDC4F'], 'clap'],
   '1f450': [['\uD83D\uDC50'], 'open_hands'],
   '1f451': [['\uD83D\uDC51'], 'crown'],
@@ -2389,7 +2421,8 @@ var ascii = {
   ';P': 'stuck_out_tongue_winking_eye',
   ';-p': 'stuck_out_tongue_winking_eye',
   ';-P': 'stuck_out_tongue_winking_eye',
-  ':o)': 'monkey_face'
+  ':o)': 'monkey_face',
+  '(y)': 'thumb_up'
 };
 
 exports.default = { data: data, groups: groups, ascii: ascii };

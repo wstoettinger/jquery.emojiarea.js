@@ -1,17 +1,21 @@
+
 /**
- * This class generated css style which can automatically be injected into the head.
- * This is not needed in unicode or image mode.
+ * This class generated css style which can automatically be injected into a given element.
+ * This is not needed in unicode or image mode, only in css mode.
  *
  * @author Wolfgang Stöttinger
  */
 import $ from 'jquery';
 import Emoji from 'EmojiUtil';
+import EmojiArea from 'EmojiArea';
 
 export default class EmojiStyleGenerator {
 
   static createImageStyles(options = {}) {
-    const iconSize = options.iconSize || 25;
-    const assetPath = options.assetPath || '../images';
+    options = $.extend({}, EmojiArea.DEFAULTS, typeof options === 'object' && options);
+
+    const iconSize = options.iconSize;
+    const assetPath = options.assetPath;
 
     let style = '';
     // with before pseudo doesn't work with selection
@@ -44,7 +48,8 @@ export default class EmojiStyleGenerator {
     return style;
   }
 
-  static injectImageStyles(options = {}) {
-    $('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo("head");
+  static injectImageStyles(element, options) {
+    element = element || 'head';
+    $('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo(element);
   }
 }
