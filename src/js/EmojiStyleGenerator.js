@@ -49,7 +49,7 @@ export default class EmojiStyleGenerator {
   }
 
   static injectImageStyles(element, options) {
-    element = element || 'head';
+    element = element || $('head');
     $('<style type="text/css">' + EmojiStyleGenerator.createImageStyles(options) + '</style>').appendTo(element);
   }
 }
